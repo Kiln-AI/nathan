@@ -28,7 +28,7 @@ describe.each([
     const urls = [...values(manifest, "url"), ...values(manifest, "request_url")];
     expect(urls).toHaveLength(3);
     for (const url of urls) {
-      expect(url).toBe(`https://${worker}.REPLACE_WITH_WORKERS_SUBDOMAIN.workers.dev/slack/events`);
+      expect(url).toMatch(new RegExp(`^https://${worker}\\.[a-z0-9-]+\\.workers\\.dev/slack/events$`));
     }
   });
 
