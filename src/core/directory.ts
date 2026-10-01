@@ -8,6 +8,8 @@ export type DirectoryUser = PlatformConfig["users"][number];
 
 /** The team's GitHub ↔ Slack mapping (config `users`), plus each person's time zone. */
 export interface UserDirectory {
+  /** Every team member, in config order. */
+  users(): readonly DirectoryUser[];
   bySlack(slackId: string): DirectoryUser | undefined;
   /** Case-insensitive; a "[bot]" suffix is ignored. */
   byGithub(login: string): DirectoryUser | undefined;
@@ -67,6 +69,7 @@ export function createUserDirectory({ users, defaultTimezone, db, clock, slack, 
   }
 
   return {
+    users: () => users,
     bySlack: (slackId) => bySlackId.get(slackId),
     byGithub,
     slackMention: (login) => {

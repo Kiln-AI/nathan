@@ -7,19 +7,14 @@ import { draftNudgesDue, draftNudgeText, nudgeDraftIfDue } from "../../../src/fe
 import type { PRContext } from "../../../src/features/pr_management/refresh";
 import type { PRData } from "../../../src/github";
 import { aPR } from "../../builders/github";
-import { type PRTestApp, prApp, prConfig, testPeople } from "../../helpers/pr";
+import { type PRTestApp, prApp, prConfig, sweepAt, testPeople } from "../../helpers/pr";
 
 // Draft nudges (spec §4.8). aPR() is opened 2026-10-01T15:00Z, so it is 14 days old at
 // 2026-10-15T15:00Z.
 
-const config = { nudgeAfterDays: 14, nudgeEveryDays: 7 };
+const config = { nudgeAfterDays: 14, nudgeEveryDays: 7, reportAfterDays: 30 };
 const SINCE = DateTime.fromISO("2026-10-01T15:00:00Z", { zone: "utc" });
 const LINK = "<https://github.com/Kiln-AI/Kiln/pull/101|Kiln-AI/Kiln#101> Add the thing";
-
-async function sweepAt(h: PRTestApp, iso: string) {
-  h.clock.set(iso);
-  await h.app.scheduled(Date.parse(iso));
-}
 
 /** The feature's context over the test app, for calling its functions directly. */
 function prContext(h: PRTestApp): PRContext {

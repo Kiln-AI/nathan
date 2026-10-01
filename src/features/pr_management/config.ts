@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { slackChannelId } from "../../core/config";
+import { isValidTimeZone } from "../../core/time";
 import type { PRStatusState } from "./status";
 
 /** `WIP: …`, `[WIP] …`, `(wip) …`, `WIP …`; matched case-insensitively. */
@@ -66,10 +67,23 @@ const draftsSchema = z.strictObject({
   nudgeAfterDays: z.number().int().positive().default(14),
   /** …and again every this many days after that. */
   nudgeEveryDays: z.number().int().positive().default(7),
+  /** Drafts this many days old are listed in the daily report's Old drafts section. */
+  reportAfterDays: z.number().int().positive().default(30),
+});
+
+const reportSchema = z.strictObject({
+  /** Local time (24h "HH:MM") the daily report is posted on weekdays. */
+  at: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "must be HH:MM (24h)")
+    .default("09:30"),
+  /** The report's time zone; also the zone its dates are shown in. Spec §7: team-wide events use ET. */
+  timezone: z.string().refine(isValidTimeZone, { message: "not a valid IANA time zone" }).default("America/New_York"),
 });
 
 export type ReminderConfig = z.output<typeof remindersSchema>;
 export type DraftConfig = z.output<typeof draftsSchema>;
+export type ReportConfig = z.output<typeof reportSchema>;
 
 export const prConfigSchema = z
   .strictObject({
@@ -89,6 +103,7 @@ export const prConfigSchema = z
       .refine(isValidRegex, { message: "not a valid regular expression" }),
     reminders: remindersSchema.prefault({}),
     drafts: draftsSchema.prefault({}),
+    report: reportSchema.prefault({}),
   })
   .superRefine((config, ctx) => {
     const seen = new Set<string>();

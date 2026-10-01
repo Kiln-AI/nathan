@@ -27,7 +27,14 @@ describe("pr_management config", () => {
         urgentThresholdHours: 4,
         templates: DEFAULT_REMINDER_TEMPLATES,
       },
-      drafts: { nudgeAfterDays: 14, nudgeEveryDays: 7 },
+      drafts: { nudgeAfterDays: 14, nudgeEveryDays: 7, reportAfterDays: 30 },
+      report: { at: "09:30", timezone: "America/New_York" },
+    });
+  });
+
+  it("takes a report time and zone", () => {
+    expect(load({ report: { at: "08:05", timezone: "America/Toronto" } })).toMatchObject({
+      report: { at: "08:05", timezone: "America/Toronto" },
     });
   });
 
@@ -74,6 +81,13 @@ describe("pr_management config", () => {
     ["no template levels", { reminders: { templates: [] } }, "features.pr_management.reminders.templates"],
     ["a blank template", { reminders: { templates: [["  "]] } }, "features.pr_management.reminders.templates.0.0"],
     ["a fractional draft age", { drafts: { nudgeAfterDays: 1.5 } }, "features.pr_management.drafts.nudgeAfterDays"],
+    ["a report time without minutes", { report: { at: "9" } }, "features.pr_management.report.at: must be HH:MM"],
+    ["a report time past midnight", { report: { at: "24:00" } }, "features.pr_management.report.at: must be HH:MM"],
+    [
+      "an unknown report zone",
+      { report: { timezone: "Eastern" } },
+      "features.pr_management.report.timezone: not a valid IANA time zone",
+    ],
   ])("rejects %s", (_name, overrides, message) => {
     expect(() => load(overrides)).toThrow(message);
   });

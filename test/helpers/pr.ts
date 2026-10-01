@@ -58,10 +58,25 @@ export function prApp(overrides: AppOverrides = {}) {
 
 export type PRTestApp = ReturnType<typeof prApp>;
 
+/**
+ * Runs the scheduler tick at `iso` with the daily report held back, for tests of the hourly sweep:
+ * a tick on a later day would otherwise catch up on the report it missed.
+ */
+export async function sweepAt(h: PRTestApp, iso: string) {
+  await h.app.services.db.run(
+    `INSERT INTO job_runs (name, last_run_at) VALUES ('pr_management.daily_report', ?1)
+     ON CONFLICT (name) DO UPDATE SET last_run_at = excluded.last_run_at`,
+    Number.MAX_SAFE_INTEGER,
+  );
+  h.clock.set(iso);
+  await h.app.scheduled(Date.parse(iso));
+}
+
 /** `People` over an in-memory directory, for the pure modules. */
 export function testPeople(triager = "dan", users = PR_USERS): People {
   const byGithub = (login: string) => users.find((u) => normalizeGithubLogin(u.github) === normalizeGithubLogin(login));
   const directory: UserDirectory = {
+    users: () => users,
     bySlack: (id) => users.find((u) => u.slack === id),
     byGithub,
     slackMention: (login) => {

@@ -1,0 +1,37 @@
+[
+  {
+    "text": "PR report for Tue Oct 20: 0 open PRs",
+    "blocks": [
+      {
+        "type": "header",
+        "text": {
+          "type": "plain_text",
+          "text": "PR report · Tue Oct 20",
+          "emoji": true
+        }
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "*All clear* 🎉 No open PRs.\n*0* opened · *0* merged since Mon Oct 19"
+        }
+      },
+      {
+        "type": "actions",
+        "elements": [
+          {
+            "type": "button",
+            "action_id": "request_pr_open",
+            "text": {
+              "type": "plain_text",
+              "text": "Request PR",
+              "emoji": true
+            },
+            "style": "primary"
+          }
+        ]
+      }
+    ]
+  }
+]

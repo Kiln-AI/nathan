@@ -1,0 +1,19 @@
+{
+  "text": "3 waiting on you, 3 of yours open",
+  "blocks": [
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*Waiting on you* (3)\n*Review*\n• <https://github.com/Kiln-AI/Kiln/pull/3|Kiln-AI/Kiln#3> Add the thing · by bob · waiting 1d 6h\n• <https://github.com/Kiln-AI/Kiln/pull/1|Kiln-AI/Kiln#1> Add the thing · by bob · waiting 5h\n*Fix CI*\n• <https://github.com/Kiln-AI/Kiln/pull/4|Kiln-AI/Kiln#4> Add the thing · by alice · waiting 2h"
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*Your open PRs* (3)\n• <https://github.com/Kiln-AI/Kiln/pull/5|Kiln-AI/Kiln#5> Add the thing · 📝 Draft · Owner: <@UALICE> · opened 2w 2d ago\n• <https://github.com/Kiln-AI/Kiln/pull/4|Kiln-AI/Kiln#4> Add the thing · ❌ CI failing · Owner: <@UALICE> · opened 3d 23h ago\n• <https://github.com/Kiln-AI/Kiln/pull/7|Kiln-AI/Kiln#7> Add the thing · 👀 Awaiting review · Owner: <@UBOB> · opened 10h ago"
+      }
+    }
+  ]
+}

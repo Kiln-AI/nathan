@@ -1,0 +1,97 @@
+[
+  {
+    "text": "PR report for Mon Oct 19: 5 open PRs, 2 need attention",
+    "blocks": [
+      {
+        "type": "header",
+        "text": {
+          "type": "plain_text",
+          "text": "PR report · Mon Oct 19",
+          "emoji": true
+        }
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "*5* open PRs (+1 since the last report)\n*0* opened · *1* merged since Fri Oct 16\nAge: median *3d* · mean *4d 15h*"
+        }
+      },
+      {
+        "type": "actions",
+        "elements": [
+          {
+            "type": "button",
+            "action_id": "request_pr_open",
+            "text": {
+              "type": "plain_text",
+              "text": "Request PR",
+              "emoji": true
+            },
+            "style": "primary"
+          }
+        ]
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "*Needs attention* (2)\n*alice*\n• <https://github.com/Kiln-AI/Kiln/pull/1|Kiln-AI/Kiln#1> Speed up the &lt;indexer&gt; · 🔁 Changes requested · Next: Address feedback & re-request review · 6d\n• <https://github.com/Kiln-AI/Kiln/pull/2|Kiln-AI/Kiln#2> Add the thing · 👀 Awaiting review · Next: Review · 3d\n*bob*\n• <https://github.com/Kiln-AI/Kiln/pull/2|Kiln-AI/Kiln#2> Add the thing · 👀 Awaiting review · Next: Review · 3d"
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "*OSS contributors* (1, triager dan)\n• <https://github.com/Kiln-AI/Kiln/pull/4|Kiln-AI/Kiln#4> Add the thing · 👀 Awaiting review · Next: Review · Owner: carol · 1w 5d"
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "*Dependabot* (1)\n• <https://github.com/Kiln-AI/nathan/pull/5|Kiln-AI/nathan#5> Bump luxon from 3.7.1 to 3.7.2 · ❌ CI failing · Owner: dan · 2d"
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "*Old drafts* (1, over 30 days)\n• <https://github.com/Kiln-AI/Kiln/pull/6|Kiln-AI/Kiln#6> Add the thing · by carol · 5w 5d"
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "*Trends* (team PRs, last 7 days)\n• Median time to first review: *1d* (the week before: 1d)\n• Median time to merge: *2d* (the week before: 3d)\n• PRs merged: *1* (the week before: 1)\n• Median open PR age: *3d* (the week before: —)"
+        }
+      },
+      {
+        "type": "divider"
+      },
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": "*People* (last 7 days)\n• alice: 1 open · 1 review waiting on them · 0 merged · 1 PR reviewed\n• bob: 1 open · 1 review waiting on them · 1 merged · 0 PRs reviewed\n• carol: 1 open · 1 review waiting on them · 0 merged · 0 PRs reviewed\n• dan: 0 open · 0 reviews waiting on them · 0 merged · 0 PRs reviewed"
+        }
+      }
+    ]
+  }
+]

@@ -35,7 +35,7 @@ status: complete
   - Weekend-excluded due levels per owner time zone, `urgent` threshold.
   - Escalating tone templates with variant rotation, posted in the card thread (creating the card if needed).
   - Draft DM nudges.
-- [ ] Phase 7: **Report and personal queue.**
+- [x] Phase 7: **Report and personal queue.**
   - Daily report at 09:30 ET weekdays, plus the Monday Trends and People sections and the "Request PR" button.
   - Metrics, Block Kit size-limit splitting.
   - App Home "Waiting on you" / "Your open PRs" section and `/nathan prs`.

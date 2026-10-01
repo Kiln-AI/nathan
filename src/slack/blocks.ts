@@ -89,6 +89,34 @@ export function context(...texts: string[]): ContextBlock {
   return { type: "context", elements: texts.slice(0, MAX_CONTEXT_ELEMENTS).map(mrkdwn) };
 }
 
+/**
+ * Lines (joined with newlines) packed into as few sections as Slack's text limit allows. A line is
+ * never split across sections; one longer than the limit on its own is truncated.
+ */
+export function sectionsFromLines(lines: readonly string[]): SectionBlock[] {
+  const texts: string[] = [];
+  let current: string | undefined;
+  for (const line of lines) {
+    const fitted = truncate(line, MAX_SECTION_TEXT);
+    if (current !== undefined && current.length + 1 + fitted.length <= MAX_SECTION_TEXT) {
+      current = `${current}\n${fitted}`;
+    } else {
+      if (current !== undefined) texts.push(current);
+      current = fitted;
+    }
+  }
+  if (current !== undefined) texts.push(current);
+  return texts.map((text) => section(text));
+}
+
+/** Splits blocks into consecutive groups of at most `size`, e.g. one message each. */
+export function chunkBlocks<B>(blocks: readonly B[], size = MAX_MESSAGE_BLOCKS): B[][] {
+  if (size < 1) throw new Error("chunk size must be at least 1");
+  const chunks: B[][] = [];
+  for (let start = 0; start < blocks.length; start += size) chunks.push(blocks.slice(start, start + size));
+  return chunks;
+}
+
 export function divider(): DividerBlock {
   return { type: "divider" };
 }

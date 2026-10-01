@@ -78,6 +78,14 @@ export interface PREvent {
 
 export type NewPREvent = Omit<PREvent, "id">;
 
+/** A daily report that was posted. */
+export interface PostedReport {
+  /** The scheduled time it was posted for. */
+  slot: DateTime;
+  /** Open non-draft PRs at the time. */
+  openCount: number;
+}
+
 interface PRRow {
   repo: string;
   number: number;
@@ -355,6 +363,25 @@ export function createPRStore(db: Db) {
         repo,
         number,
         ...ids,
+      );
+    },
+
+    /** The latest report posted for a slot before `before`. */
+    async lastReport(before: DateTime): Promise<PostedReport | null> {
+      const row = await db.first<{ slot: number; open_count: number }>(
+        "SELECT slot, open_count FROM pr_reports WHERE slot < ? ORDER BY slot DESC LIMIT 1",
+        before.toMillis(),
+      );
+      return row && { slot: DateTime.fromMillis(row.slot, { zone: "utc" }), openCount: row.open_count };
+    },
+
+    async saveReport(report: PostedReport, postedAt: DateTime): Promise<void> {
+      await db.run(
+        `INSERT INTO pr_reports (slot, open_count, posted_at) VALUES (?1, ?2, ?3)
+         ON CONFLICT (slot) DO UPDATE SET open_count = excluded.open_count, posted_at = excluded.posted_at`,
+        report.slot.toMillis(),
+        report.openCount,
+        postedAt.toMillis(),
       );
     },
 

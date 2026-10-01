@@ -2,7 +2,7 @@ import type { DateTime } from "luxon";
 import { normalizeGithubLogin } from "../../core/directory";
 import { formatAge } from "../../core/time";
 import type { PRData } from "../../github";
-import { context, escapeText, link, type MessageBlock, mention, section } from "../../slack";
+import { context, escapeText, link, type MessageBlock, mention, section, truncate } from "../../slack";
 import type { People } from "./people";
 import { type PRStatusState, STATE_INFO } from "./status";
 
@@ -101,6 +101,14 @@ function statusLine(model: CardModel, people: People): string {
   const ownerLabel = model.owners.length === 1 ? "Owner" : "Owners";
   const owners = model.owners.map((login) => people.label(login)).join(", ");
   return `${heading} · Next: ${info.nextStep} · ${ownerLabel}: ${owners}`;
+}
+
+/** Titles longer than this are shortened in lists (the card itself shows the whole title). */
+export const MAX_LISTED_TITLE = 80;
+
+/** "<link|repo#n> title" for one line in a list of PRs. */
+export function prListTitle(pr: { url: string; repo: string; number: number; title: string }): string {
+  return `${link(pr.url, `${pr.repo}#${pr.number}`)} ${escapeText(truncate(pr.title, MAX_LISTED_TITLE))}`;
 }
 
 /** Escaped and quoted line by line, as mrkdwn. */

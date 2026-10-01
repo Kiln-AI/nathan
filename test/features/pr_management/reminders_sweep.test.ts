@@ -2,15 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_REMINDER_TEMPLATES } from "../../../src/features/pr_management/config";
 import type { PRData } from "../../../src/github";
 import { aPR, aReview } from "../../builders/github";
-import { PR_CHANNEL, type PRTestApp, prApp, prConfig, REPO } from "../../helpers/pr";
+import { PR_CHANNEL, type PRTestApp, prApp, prConfig, REPO, sweepAt } from "../../helpers/pr";
 
 // Stale reminders (spec §4.6), driven through the scheduler's hourly sweep.
-
-/** Runs the scheduler tick at `iso` (on the hour, when the sweep is due). */
-async function sweepAt(h: PRTestApp, iso: string) {
-  h.clock.set(iso);
-  await h.app.scheduled(Date.parse(iso));
-}
 
 /** A PR first seen by the sweep at `iso`, which starts its staleness clock. */
 async function seenAt(h: PRTestApp, iso: string, overrides: Partial<PRData> = {}) {

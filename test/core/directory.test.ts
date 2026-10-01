@@ -38,6 +38,10 @@ describe("lookups", () => {
     expect(dir.byGithub("stranger")).toBeUndefined();
   });
 
+  it("lists every user in config order", () => {
+    expect(directory().dir.users()).toEqual(users);
+  });
+
   it("mentions mapped logins only", () => {
     const { dir } = directory();
     expect(dir.slackMention("BOB")).toBe("<@UBOB>");

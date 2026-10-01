@@ -4,6 +4,7 @@ import {
   button,
   channelLink,
   checkboxes,
+  chunkBlocks,
   context,
   divider,
   escapeText,
@@ -16,6 +17,7 @@ import {
   modal,
   multiUsersSelect,
   section,
+  sectionsFromLines,
   textInput,
   truncate,
   urlInput,
@@ -42,6 +44,42 @@ describe("text helpers", () => {
   it("never splits an emoji when truncating", () => {
     expect(truncate("ab🎉cd", 4)).toBe("ab…");
     expect(truncate("ab🎉cd", 5)).toBe("ab🎉…");
+  });
+});
+
+describe("sectionsFromLines", () => {
+  it("packs lines into one section while they fit", () => {
+    expect(sectionsFromLines(["*Heading*", "• one", "• two"])).toEqual([section("*Heading*\n• one\n• two")]);
+  });
+
+  it("starts a new section rather than split a line at the limit", () => {
+    const line = "x".repeat(1000);
+    const sections = sectionsFromLines([line, line, line, "y"]);
+    // Three 1000-char lines and two newlines are 3002 characters, over the limit.
+    expect(sections.map((s) => s.text?.text)).toEqual([`${line}\n${line}`, `${line}\ny`]);
+  });
+
+  it("truncates a line too long for any section", () => {
+    const [only] = sectionsFromLines(["z".repeat(MAX_SECTION_TEXT + 5)]);
+    expect(only?.text?.text).toHaveLength(MAX_SECTION_TEXT);
+  });
+
+  it("returns nothing for no lines", () => {
+    expect(sectionsFromLines([])).toEqual([]);
+  });
+});
+
+describe("chunkBlocks", () => {
+  it("splits into groups of 50 by default, keeping order", () => {
+    const blocks = Array.from({ length: 101 }, (_, i) => i);
+    expect(chunkBlocks(blocks).map((chunk) => chunk.length)).toEqual([50, 50, 1]);
+    expect(chunkBlocks(blocks).flat()).toEqual(blocks);
+  });
+
+  it("takes a size, returns nothing for no blocks, and rejects a size below 1", () => {
+    expect(chunkBlocks([1, 2, 3], 2)).toEqual([[1, 2], [3]]);
+    expect(chunkBlocks([])).toEqual([]);
+    expect(() => chunkBlocks([1], 0)).toThrow("at least 1");
   });
 });
 

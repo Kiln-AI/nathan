@@ -4,6 +4,7 @@ import type {
   AnyModalBlock,
   HomeTabView,
   ModalView,
+  SectionBlock,
   ViewStateValue as SlackEdgeViewStateValue,
 } from "slack-edge";
 
@@ -12,7 +13,8 @@ import type {
 export type MessageBlock = AnyMessageBlock;
 export type ModalBlock = AnyModalBlock;
 export type HomeBlock = AnyHomeTabBlock;
-export type { HomeTabView, ModalView };
+/** Valid in messages, modals and the App Home alike. */
+export type { HomeTabView, ModalView, SectionBlock };
 export type ViewStateValue = SlackEdgeViewStateValue;
 /** Submitted input values: block_id → action_id → value. */
 export type ViewValues = Record<string, Record<string, ViewStateValue>>;
