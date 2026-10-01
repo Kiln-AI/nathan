@@ -36,7 +36,7 @@ Off-the-shelf options (GitHub's Slack scheduled reminders, Axolo, Graphite, Line
 - Adding a feature should require only adding a new module and registering it. It should not require touching other features.
 
 ### 3.2 Shared services available to features
-- **GitHub client**: read access to repos, PRs, reviews, checks and org membership. Write access is limited to an explicit allow-list (§3.4).
+- **GitHub client**: read access to repos, PRs, reviews and checks. Write access is limited to an explicit allow-list (§3.4).
 - **Slack client**: post and update messages, open modals, threads, DMs, ephemeral messages, user lookup (including the user's Slack time zone).
 - **User directory**: maps Slack users to GitHub users (§6.2).
 - **Persistent storage**: small key/record storage for feature state (e.g., PR → Slack thread mapping, reminder counters).
@@ -49,8 +49,8 @@ Off-the-shelf options (GitHub's Slack scheduled reminders, Axolo, Graphite, Line
 - Core logic (state computation, staleness, report metrics) is pure and unit-testable without Slack or GitHub.
 
 ### 3.4 Permissions and safety
-- GitHub access is via a GitHub App installed on the org with the narrowest workable permissions: read for metadata, PRs, checks/statuses and org members; write for PRs, used only for the allow-listed operations.
-- **GitHub write allow-list (V1):** request reviewers, remove requested reviewers, mark a draft PR ready for review. Anything else is a code-review-gated change to the allow-list.
+- GitHub access is via a GitHub App installed on the org with the narrowest workable permissions: Metadata read, Pull requests read & write, Checks read, Commit statuses read. Pull requests write is used only for the allow-listed operations. See [research](research/platform-stack/summary.md).
+- **GitHub write allow-list (V1):** request reviewers. That's the only write. Anything else is a code-review-gated change to the allow-list.
 - Nathan never comments on GitHub in V1. This matters because OSS repos are public.
 - All inbound Slack requests and GitHub webhooks are signature-verified.
 - Secrets live in the host's secret store, never in the repo.
@@ -78,25 +78,30 @@ Rules are evaluated in order; the first match wins:
 |---|-----------|-------|-----------|----------|
 | 1 | Merged | `merged` | none | none |
 | 2 | Closed unmerged | `closed` | none | none |
-| 3 | Draft | `draft` | Finish & mark ready | author |
-| 4 | Merge conflict | `conflict` | Resolve conflicts | author |
-| 5 | Required CI checks failing | `ci_failing` | Fix CI | author |
-| 6 | ≥1 pending requested reviewer | `awaiting_review` | Review | pending reviewers |
-| 7 | Any reviewer's latest review is "changes requested" | `changes_requested` | Address feedback & re-request review | author |
-| 8 | ≥1 approval | `approved` | Merge | author |
-| 9 | Has reviews but none of the above | `needs_rerequest` | Re-request review or merge | author |
-| 10 | No reviewers requested, no reviews | `needs_reviewer` | Request a reviewer | author |
+| 3 | In a merge queue (P3) | `in_merge_queue` | Wait for merge queue | none |
+| 4 | Draft | `draft` | Finish & mark ready | author |
+| 5 | Title marks it WIP (non-draft) | `wip_title` | Convert to draft, or drop "WIP" from the title | author |
+| 6 | Merge conflict | `conflict` | Resolve conflicts | author |
+| 7 | Required CI checks failing | `ci_failing` | Fix CI | author |
+| 8 | ≥1 pending requested reviewer | `awaiting_review` | Review | pending reviewers |
+| 9 | Any reviewer's latest review is "changes requested" | `changes_requested` | Address feedback & re-request review | author |
+| 10 | ≥1 approval | `approved` | Merge | author |
+| 11 | Has reviews but none of the above | `needs_rerequest` | Re-request review or merge | author |
+| 12 | No reviewers requested, no reviews | `needs_reviewer` | Request a reviewer | author |
+
+- **WIP title:** the title starts with `WIP` (case-insensitive, optionally bracketed or followed by `:`; e.g. `WIP: …`, `[WIP] …`, `(wip) …`). The pattern is configurable. A WIP-titled non-draft PR is a normal tracked PR (card, handoffs, reminders), but the author owns it, so reviewers aren't nagged about it.
+- **Merge queue (P3, low priority):** a PR that is in a GitHub merge queue has no owner and gets no reminders. The team doesn't use merge queues yet; build it only if it's cheap, and with tests.
 
 - **Non-team authors:** for OSS and Dependabot PRs, wherever the owner would be "author", it is the **triager** (configurable; initially Daniel). Reviewer-owned steps still go to the reviewers.
 - "Required CI checks" means checks marked required by branch protection. If none are required, any failing check counts. CI still running does not count as failing.
-- **Team review requests** (requesting a GitHub team rather than a person) are not expanded in V1. If a team is the only pending reviewer, rule 6 treats the PR as having no pending reviewer.
+- **Team review requests** (requesting a GitHub team rather than a person) are not expanded in V1. If a team is the only pending reviewer, rule 8 treats the PR as having no pending reviewer.
 - Nathan does not alter the state for a reviewer who is also the author.
 
 ### 4.3 Request PR (taking over the existing Slack workflow)
 There are two equivalent entry points, and both end in the same state: reviewers requested on GitHub, plus one Nathan thread in `#prs`.
 
 **A. Slack form (primary)**
-- Opened from a **"Request PR" shortcut** (global shortcut / the channel's workflow and bookmark button in `#prs`). The UX matches today's workflow form.
+- Opened from a **"Request PR" global shortcut**, a button on Nathan's App Home, or a button in the daily report. A global shortcut has no URL, so it can't be a channel bookmark (see [research](research/platform-stack/slack-app-framework/summary.md)). The UX matches today's workflow form.
 - Fields:
   - **PR link** (required)
   - **Modifiers** (optional, multi-select): `quick`, `large`, `urgent`
@@ -109,7 +114,8 @@ There are two equivalent entry points, and both end in the same state: reviewers
   - The PR isn't found or isn't open.
   - A selected reviewer has no GitHub mapping. The error names the person and says how to add them (§6.2).
   - The submitter selected only themselves as reviewer (when they are the author).
-- If the PR is a **draft**, the modal offers a checkbox "Mark ready for review" (default on). Submitting with it off is rejected with an explanation.
+  - The PR is a **draft**: "Mark it ready for review on GitHub first." Nathan never un-drafts PRs.
+  - The PR title marks it **WIP**: "Title still says WIP. Update it on GitHub first."
 - On submit: Nathan requests the selected reviewers on GitHub (adding them to any already requested; it never removes anyone), then posts or updates the thread (§4.4).
 - If the submitter is not the PR author, that is allowed (e.g., a teammate posting on someone's behalf). The thread credits the submitter.
 
