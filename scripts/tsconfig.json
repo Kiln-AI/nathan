@@ -1,6 +1,6 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": { "types": ["node"] },
-  "include": ["check-imports.ts", "lib"],
+  "include": ["check-imports.ts", "lib/feature_boundaries.ts"],
   "exclude": []
 }

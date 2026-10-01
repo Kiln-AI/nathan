@@ -14,13 +14,19 @@ export interface GitHubAppCredentials {
 
 export const PKCS8_CONVERSION_COMMAND = "openssl pkcs8 -topk8 -nocrypt -in key.pem -out key.pk8.pem";
 
+export type GitHubAppAuth = Pick<GitHubAppCredentials, "appId" | "privateKey" | "installationId">;
+
 /** Reads and checks the GitHub App secrets. Throws at startup when one is missing or malformed. */
 export function readGitHubAppCredentials(env: object): GitHubAppCredentials {
+  return { ...readGitHubAppAuth(env), webhookSecret: requireSecret(env, "GITHUB_WEBHOOK_SECRET") };
+}
+
+/** Just the secrets that mint installation tokens (scripts/verify-github.ts needs no webhook secret). */
+export function readGitHubAppAuth(env: object): GitHubAppAuth {
   return {
     appId: String(positiveInteger(requireSecret(env, "GITHUB_APP_ID"), "GITHUB_APP_ID")),
     privateKey: assertPkcs8PrivateKey(requireSecret(env, "GITHUB_APP_PRIVATE_KEY")),
     installationId: positiveInteger(requireSecret(env, "GITHUB_INSTALLATION_ID"), "GITHUB_INSTALLATION_ID"),
-    webhookSecret: requireSecret(env, "GITHUB_WEBHOOK_SECRET"),
   };
 }
 
@@ -69,7 +75,7 @@ export interface InstallationTokens {
 }
 
 export interface InstallationTokenDeps {
-  credentials: Pick<GitHubAppCredentials, "appId" | "privateKey" | "installationId">;
+  credentials: GitHubAppAuth;
   kv: KVNamespace;
   clock: Clock;
   /** An unauthenticated Octokit `request`, used to mint tokens. */

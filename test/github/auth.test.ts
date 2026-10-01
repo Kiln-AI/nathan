@@ -4,6 +4,7 @@ import {
   assertPkcs8PrivateKey,
   type CachedToken,
   createInstallationTokens,
+  readGitHubAppAuth,
   readGitHubAppCredentials,
   TOKEN_CACHE_KEY,
 } from "../../src/github/auth";
@@ -38,6 +39,17 @@ describe("readGitHubAppCredentials", () => {
         `${name} must be a positive integer`,
       );
     }
+  });
+});
+
+describe("readGitHubAppAuth", () => {
+  it("reads the token secrets without needing the webhook secret", () => {
+    const { GITHUB_WEBHOOK_SECRET: _unused, ...tokenSecrets } = secrets;
+    expect(readGitHubAppAuth(tokenSecrets)).toEqual({
+      appId: "12345",
+      privateKey: env.GITHUB_APP_PRIVATE_KEY.trim(),
+      installationId: 67890,
+    });
   });
 });
 

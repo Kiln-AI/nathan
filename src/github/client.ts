@@ -22,7 +22,7 @@ export type ReadOnlyGraphql = <T>(query: string, variables?: Record<string, unkn
 
 export interface GitHubHttp {
   graphql: ReadOnlyGraphql;
-  /** Authenticated REST. Only the writer uses it. */
+  /** Authenticated REST. The writer uses it, and scripts/verify-github.ts for one read (branch rules). */
   request: Octokit["request"];
 }
 

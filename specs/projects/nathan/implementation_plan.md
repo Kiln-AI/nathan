@@ -39,7 +39,7 @@ status: complete
   - Daily report at 09:30 ET weekdays, plus the Monday Trends and People sections and the "Request PR" button.
   - Metrics, Block Kit size-limit splitting.
   - App Home "Waiting on you" / "Your open PRs" section and `/nathan prs`.
-- [ ] Phase 8: **Launch readiness.**
+- [x] Phase 8: **Launch readiness.**
   - Complete `docs/setup.md`: Slack and GitHub apps per env, secrets, key conversion, D1/KV/queue creation, inviting Nathan to `#prs`.
   - A `scripts/verify-github.ts` live check: App token, `isRequired`, sweep `rateLimit.cost`.
   - Staging dry-run checklist and the production cutover/retire-old-workflow checklist.
