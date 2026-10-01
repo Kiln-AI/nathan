@@ -31,7 +31,7 @@ status: complete
   - Global shortcut and an App Home button opening the modal.
   - Validation inside the ack budget.
   - `request_review` job: request reviewers, refresh, post/update the card, re-request replies; DM the submitter if it gives up.
-- [ ] Phase 6: **Reminders and drafts.**
+- [x] Phase 6: **Reminders and drafts.**
   - Weekend-excluded due levels per owner time zone, `urgent` threshold.
   - Escalating tone templates with variant rotation, posted in the card thread (creating the card if needed).
   - Draft DM nudges.

@@ -3,7 +3,11 @@ import config from "../../../nathan.config";
 import { loadConfig } from "../../../src/core/config";
 import { features } from "../../../src/features";
 import { prManagement } from "../../../src/features/pr_management";
-import { DEFAULT_BOT_AUTHORS, DEFAULT_WIP_TITLE_PATTERN } from "../../../src/features/pr_management/config";
+import {
+  DEFAULT_BOT_AUTHORS,
+  DEFAULT_REMINDER_TEMPLATES,
+  DEFAULT_WIP_TITLE_PATTERN,
+} from "../../../src/features/pr_management/config";
 import { prApp, prConfig } from "../../helpers/pr";
 
 const load = (overrides: Record<string, unknown> = {}) =>
@@ -17,7 +21,31 @@ describe("pr_management config", () => {
       triager: "dan",
       botAuthors: DEFAULT_BOT_AUTHORS,
       wipTitlePattern: DEFAULT_WIP_TITLE_PATTERN,
+      reminders: {
+        thresholdHours: 24,
+        thresholdHoursByState: {},
+        urgentThresholdHours: 4,
+        templates: DEFAULT_REMINDER_TEMPLATES,
+      },
+      drafts: { nudgeAfterDays: 14, nudgeEveryDays: 7 },
     });
+  });
+
+  it("fills in the defaults a partial reminders or drafts section leaves out", () => {
+    expect(
+      load({
+        reminders: { thresholdHoursByState: { awaiting_review: 8 }, templates: [["Ping"]] },
+        drafts: { nudgeEveryDays: 3 },
+      }),
+    ).toMatchObject({
+      reminders: { thresholdHours: 24, thresholdHoursByState: { awaiting_review: 8 }, templates: [["Ping"]] },
+      drafts: { nudgeAfterDays: 14, nudgeEveryDays: 3 },
+    });
+  });
+
+  it("ships at least two variants for each of levels 1, 2, 3 and 4+", () => {
+    expect(DEFAULT_REMINDER_TEMPLATES).toHaveLength(4);
+    for (const group of DEFAULT_REMINDER_TEMPLATES) expect(group.length).toBeGreaterThanOrEqual(2);
   });
 
   it.each<[string, Record<string, unknown>, string]>([
@@ -32,6 +60,20 @@ describe("pr_management config", () => {
     ["a channel name", { channel: "#prs" }, "features.pr_management.channel: must be a Slack channel ID"],
     ["a bad WIP pattern", { wipTitlePattern: "([" }, "features.pr_management.wipTitlePattern: not a valid regular"],
     ["an unknown key", { channels: "x" }, "features.pr_management"],
+    ["a zero threshold", { reminders: { thresholdHours: 0 } }, "features.pr_management.reminders.thresholdHours"],
+    [
+      "a threshold for a state that gets no reminders",
+      { reminders: { thresholdHoursByState: { draft: 5 } } },
+      "features.pr_management.reminders.thresholdHoursByState",
+    ],
+    [
+      "an empty template level",
+      { reminders: { templates: [["Ping"], []] } },
+      "features.pr_management.reminders.templates.1: needs at least one variant",
+    ],
+    ["no template levels", { reminders: { templates: [] } }, "features.pr_management.reminders.templates"],
+    ["a blank template", { reminders: { templates: [["  "]] } }, "features.pr_management.reminders.templates.0.0"],
+    ["a fractional draft age", { drafts: { nudgeAfterDays: 1.5 } }, "features.pr_management.drafts.nudgeAfterDays"],
   ])("rejects %s", (_name, overrides, message) => {
     expect(() => load(overrides)).toThrow(message);
   });

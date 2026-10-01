@@ -1,4 +1,4 @@
-import type { DateTime } from "luxon";
+import { DateTime } from "luxon";
 import type { Services } from "../../core/feature";
 import type { PRData } from "../../github";
 import { type CardModel, type RenderedCard, renderCard, reviewerLines } from "./card";
@@ -6,7 +6,7 @@ import type { PRConfig } from "./config";
 import { describeHandoff } from "./handoff";
 import type { People } from "./people";
 import { categorize, computeStatus, effectiveMergeable, isFinal, type PRStatusState, sameOwners } from "./status";
-import type { PREvent, PRRecord, PRStore } from "./store";
+import { type CardLocation, NO_DRAFT_NUDGES, NO_REMINDERS, type PREvent, type PRRecord, type PRStore } from "./store";
 
 /** PR data read earlier (by the sweep), and when the read started. */
 export interface PRSnapshot {
@@ -121,6 +121,8 @@ function fromPullRequest(
     submittedBy: null,
     card: null,
     cardHash: null,
+    reminders: NO_REMINDERS,
+    draftNudges: NO_DRAFT_NUDGES,
     version: 0,
     ...before,
     repo,
@@ -138,6 +140,7 @@ function fromPullRequest(
     state: status.state,
     owners: status.owners,
     stateSince: before && !changed ? before.stateSince : readAt,
+    draftSince: pr.isDraft ? DateTime.max(pr.createdAt, pr.lastConvertedToDraftAt ?? pr.createdAt) : null,
     refreshedAt: readAt,
   };
 }
@@ -206,11 +209,27 @@ function wantsCard(pr: PRData, fromRequestForm: boolean): boolean {
   return fromRequestForm || pr.pendingReviewers.length + pr.pendingTeams.length > 0;
 }
 
-async function postCard(ctx: PRContext, record: PRRecord, rendered: RenderedCard, hash: string): Promise<void> {
+/**
+ * The PR's card, posting it first when it has none: a reminder is always a reply in the card's
+ * thread (spec §4.4). Null when another refresh holds the lease to post it.
+ */
+export async function ensureCard(ctx: PRContext, record: PRRecord, pr: PRData): Promise<CardLocation | null> {
+  if (record.card) return record.card;
+  const rendered = renderCard(cardModel(record, pr), ctx.people, ctx.services.clock.now());
+  return postCard(ctx, record, rendered, await hashCard(rendered));
+}
+
+/** Posts and records the card. Null when another refresh holds the lease, or already posted it. */
+async function postCard(
+  ctx: PRContext,
+  record: PRRecord,
+  rendered: RenderedCard,
+  hash: string,
+): Promise<CardLocation | null> {
   const { services, store, config } = ctx;
   const now = services.clock.now();
   const claimed = await store.claimCard(record.repo, record.number, now, now.minus({ minutes: CARD_LEASE_MINUTES }));
-  if (!claimed) return;
+  if (!claimed) return null;
   let posted: { channel: string; ts: string };
   try {
     posted = await services.slack.postMessage({ channel: config.channel, ...rendered });
@@ -231,6 +250,7 @@ async function postCard(ctx: PRContext, record: PRRecord, rendered: RenderedCard
     });
     throw error;
   }
+  return { channel: posted.channel, ts: posted.ts };
 }
 
 function cardModel(record: PRRecord, pr: PRData | null): CardModel {

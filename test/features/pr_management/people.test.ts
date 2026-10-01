@@ -9,6 +9,12 @@ describe("People", () => {
     expect(people.label("outsider")).toBe("outsider");
   });
 
+  it("finds the Slack user told about each owner: the owner, else the triager", () => {
+    expect(people.recipient("Bob")).toBe("UBOB");
+    expect(people.recipient("outsider")).toBe("UDAN");
+    expect(testPeople("ghost-triager").recipient("outsider")).toBeNull();
+  });
+
   it("tags owners, falling back to the triager for unmapped ones, deduped", () => {
     expect(people.tags(["bob", "outsider", "stranger", "dan"])).toEqual(["<@UBOB>", "<@UDAN>"]);
     expect(people.tags([])).toEqual([]);

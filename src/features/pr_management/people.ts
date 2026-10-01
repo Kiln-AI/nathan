@@ -1,24 +1,27 @@
 import type { UserDirectory } from "../../core/directory";
+import { mention } from "../../slack";
 
 /** How GitHub people appear in Slack messages. */
 export interface People {
   /** A Slack mention for a mapped login, else the plain login. */
   label(login: string): string;
   /**
-   * Mentions that notify these owners, deduped. An unmapped owner falls back to the triager
-   * (spec §5); when the triager is unmapped too, nobody is tagged for them.
+   * The Slack user notified for an owner: the owner when mapped, else the triager (spec §5).
+   * Null when the triager is unmapped too, so nobody can be told.
    */
+  recipient(login: string): string | null;
+  /** Mentions of each owner's recipient, deduped. */
   tags(logins: readonly string[]): string[];
 }
 
 export function createPeople(directory: UserDirectory, triager: string): People {
+  const recipient = (login: string) => directory.byGithub(login)?.slack ?? directory.byGithub(triager)?.slack ?? null;
   return {
     label: (login) => directory.slackMention(login) ?? login,
+    recipient,
     tags: (logins) => {
-      const mentions = logins
-        .map((login) => directory.slackMention(login) ?? directory.slackMention(triager))
-        .filter((mention): mention is string => mention !== null);
-      return [...new Set(mentions)];
+      const recipients = logins.map(recipient).filter((id): id is string => id !== null);
+      return [...new Set(recipients)].map(mention);
     },
   };
 }

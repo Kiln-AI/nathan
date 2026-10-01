@@ -21,15 +21,44 @@ export interface PRRecord {
   owners: string[];
   /** When state or owners last changed. */
   stateSince: DateTime;
+  /** When the PR was opened or last converted to draft, whichever is later; null when not a draft. */
+  draftSince: DateTime | null;
   modifiers: string[];
   note: string | null;
   /** Slack user ID of whoever submitted the Request PR form. */
   submittedBy: string | null;
   card: CardLocation | null;
   cardHash: string | null;
+  reminders: ReminderState;
+  draftNudges: DraftNudgeState;
   refreshedAt: DateTime;
   version: number;
 }
+
+/** Stale reminders sent (spec §4.6). */
+export interface ReminderState {
+  /** The last reminder sent to each owner, keyed by lowercase login. */
+  sent: Record<string, SentReminder>;
+  /** The `stateSince` these belong to: a later state starts from no reminders. */
+  for: DateTime | null;
+  /** "<template group>:<variant>" of the last reminder, so the next picks another. */
+  lastVariant: string | null;
+}
+
+export interface SentReminder {
+  level: number;
+  at: DateTime;
+}
+
+/** Draft DMs sent (spec §4.8). */
+export interface DraftNudgeState {
+  count: number;
+  /** The `draftSince` the count belongs to: a draft converted again starts over. */
+  for: DateTime | null;
+}
+
+export const NO_REMINDERS: ReminderState = { sent: {}, for: null, lastVariant: null };
+export const NO_DRAFT_NUDGES: DraftNudgeState = { count: 0, for: null };
 
 export interface CardLocation {
   channel: string;
@@ -65,12 +94,18 @@ interface PRRow {
   state: string;
   owners: string;
   state_since: number;
+  draft_since: number | null;
   modifiers: string;
   note: string | null;
   submitted_by: string | null;
   card_channel: string | null;
   card_ts: string | null;
   card_hash: string | null;
+  reminders_sent: string;
+  reminded_for: number | null;
+  last_reminder_variant: string | null;
+  draft_nudges: number;
+  draft_nudged_for: number | null;
   refreshed_at: number;
   version: number;
 }
@@ -104,6 +139,7 @@ const REFRESHED_COLUMNS = [
   "state",
   "owners",
   "state_since",
+  "draft_since",
   "modifiers",
   "note",
   "submitted_by",
@@ -127,6 +163,7 @@ export function createPRStore(db: Db) {
     record.state,
     JSON.stringify(record.owners),
     record.stateSince.toMillis(),
+    record.draftSince?.toMillis() ?? null,
     JSON.stringify(record.modifiers),
     record.note,
     record.submittedBy,
@@ -207,6 +244,47 @@ export function createPRStore(db: Db) {
 
     async releaseCard(repo: string, number: number): Promise<void> {
       await db.run("UPDATE pr_prs SET card_claimed_at = NULL WHERE repo = ? AND number = ?", repo, number);
+    },
+
+    /**
+     * Records the reminders sent if the record is still at `expectedVersion`, bumping the version.
+     * False when a refresh has written since: the reminder was planned on a status now replaced.
+     */
+    async saveReminders(repo: string, number: number, state: ReminderState, expectedVersion: number): Promise<boolean> {
+      const result = await db.run(
+        `UPDATE pr_prs SET reminders_sent = ?, reminded_for = ?, last_reminder_variant = ?, version = version + 1
+         WHERE repo = ? AND number = ? AND version = ?`,
+        JSON.stringify(
+          Object.fromEntries(
+            Object.entries(state.sent).map(([login, { level, at }]) => [login, { level, at: at.toMillis() }]),
+          ),
+        ),
+        state.for?.toMillis() ?? null,
+        state.lastVariant,
+        repo,
+        number,
+        expectedVersion,
+      );
+      return result.changes === 1;
+    },
+
+    /** Records the draft DMs sent if the record is still at `expectedVersion`, bumping the version. */
+    async saveDraftNudges(
+      repo: string,
+      number: number,
+      state: DraftNudgeState,
+      expectedVersion: number,
+    ): Promise<boolean> {
+      const result = await db.run(
+        `UPDATE pr_prs SET draft_nudges = ?, draft_nudged_for = ?, version = version + 1
+         WHERE repo = ? AND number = ? AND version = ?`,
+        state.count,
+        state.for?.toMillis() ?? null,
+        repo,
+        number,
+        expectedVersion,
+      );
+      return result.changes === 1;
     },
 
     async saveCardHash(repo: string, number: number, hash: string): Promise<void> {
@@ -305,11 +383,25 @@ function toRecord(row: PRRow): PRRecord {
     state: row.state as PRStatusState,
     owners: JSON.parse(row.owners) as string[],
     stateSince: at(row.state_since),
+    draftSince: row.draft_since === null ? null : at(row.draft_since),
     modifiers: JSON.parse(row.modifiers) as string[],
     note: row.note,
     submittedBy: row.submitted_by,
     card: row.card_channel && row.card_ts ? { channel: row.card_channel, ts: row.card_ts } : null,
     cardHash: row.card_hash,
+    reminders: {
+      sent: Object.fromEntries(
+        Object.entries(JSON.parse(row.reminders_sent) as Record<string, { level: number; at: number }>).map(
+          ([login, { level, at: ms }]) => [login, { level, at: at(ms) }],
+        ),
+      ),
+      for: row.reminded_for === null ? null : at(row.reminded_for),
+      lastVariant: row.last_reminder_variant,
+    },
+    draftNudges: {
+      count: row.draft_nudges,
+      for: row.draft_nudged_for === null ? null : at(row.draft_nudged_for),
+    },
     refreshedAt: at(row.refreshed_at),
     version: row.version,
   };

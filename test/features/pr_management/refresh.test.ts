@@ -66,6 +66,23 @@ describe("refresh: the record", () => {
     expect(await h.record(2)).toMatchObject({ category: "oss", owners: ["dan"] });
   });
 
+  it("stores when a draft became one: opened, or last converted to draft; null once ready", async () => {
+    const h = prApp();
+    const opened = DateTime.fromISO("2026-09-01T12:00:00Z", { zone: "utc" });
+    const converted = DateTime.fromISO("2026-09-20T12:00:00Z", { zone: "utc" });
+    h.github.upsert(aPR({ isDraft: true, createdAt: opened }));
+    await h.refresh(101);
+    expect((await h.record(101))?.draftSince).toEqual(opened);
+
+    h.github.upsert(aPR({ isDraft: true, createdAt: opened, lastConvertedToDraftAt: converted }));
+    await h.refresh(101);
+    expect((await h.record(101))?.draftSince).toEqual(converted);
+
+    h.github.upsert(aPR({ createdAt: opened, lastConvertedToDraftAt: converted }));
+    await h.refresh(101);
+    expect((await h.record(101))?.draftSince).toBeNull();
+  });
+
   it("keeps the stored mergeability while GitHub reports unknown", async () => {
     const h = prApp();
     h.github.upsert(aPR({ mergeable: "conflicting" }));
