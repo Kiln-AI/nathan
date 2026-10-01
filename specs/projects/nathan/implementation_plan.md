@@ -17,7 +17,7 @@ status: complete
   - `/nathan` subcommand router and `help`.
   - App Home composition and the directory's tz lookup and cache.
   - Dry-run wrapper, Block Kit helpers, and both Slack manifests.
-- [ ] Phase 3: **GitHub gateway.**
+- [x] Phase 3: **GitHub gateway.**
   - App auth with a PKCS#8 check and a KV token cache.
   - Webhook verify, delivery dedupe and PR-key extraction (including fork `head_sha`).
   - `PRData` normalization; the sweep, single-PR and recent-PR GraphQL queries; the two-phase `isRequired` check.

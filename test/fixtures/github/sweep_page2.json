@@ -1,0 +1,93 @@
+{
+  "data": {
+    "r0": {
+      "pullRequests": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
+        "nodes": [
+          {
+            "id": "PR_kw103",
+            "number": 103,
+            "title": "Fix typo in README",
+            "url": "https://github.com/Kiln-AI/Kiln/pull/103",
+            "state": "OPEN",
+            "isDraft": false,
+            "createdAt": "2026-10-01T09:00:00Z",
+            "updatedAt": "2026-10-02T09:00:00Z",
+            "mergedAt": null,
+            "closedAt": null,
+            "additions": 1,
+            "deletions": 1,
+            "baseRefName": "main",
+            "headRefOid": "0000000000000000000000000000000000000067",
+            "mergeable": "MERGEABLE",
+            "author": {
+              "__typename": "User",
+              "login": "outsider"
+            },
+            "reviewRequests": {
+              "nodes": []
+            },
+            "latestOpinionatedReviews": {
+              "nodes": [
+                {
+                  "state": "APPROVED",
+                  "submittedAt": "2026-10-02T08:00:00Z",
+                  "author": {
+                    "__typename": "User",
+                    "login": "alice"
+                  }
+                }
+              ]
+            },
+            "latestReviews": {
+              "nodes": [
+                {
+                  "state": "APPROVED",
+                  "submittedAt": "2026-10-02T08:00:00Z",
+                  "author": {
+                    "__typename": "User",
+                    "login": "alice"
+                  }
+                }
+              ]
+            },
+            "timelineItems": {
+              "nodes": []
+            },
+            "commits": {
+              "nodes": [
+                {
+                  "commit": {
+                    "statusCheckRollup": {
+                      "contexts": {
+                        "pageInfo": {
+                          "hasNextPage": false
+                        },
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "test",
+                            "status": "COMPLETED",
+                            "conclusion": "SUCCESS",
+                            "startedAt": "2026-10-02T07:00:00Z",
+                            "completedAt": "2026-10-02T07:10:00Z"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "rateLimit": {
+      "cost": 2
+    }
+  }
+}

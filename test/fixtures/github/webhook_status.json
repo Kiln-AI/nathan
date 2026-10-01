@@ -1,0 +1,30 @@
+{
+  "id": 55,
+  "sha": "aaaa000000000000000000000000000000000001",
+  "name": "Kiln-AI/Kiln",
+  "context": "ci/circleci",
+  "state": "failure",
+  "branches": [
+    {
+      "name": "faster-evals"
+    }
+  ],
+  "repository": {
+    "id": 600001,
+    "name": "Kiln",
+    "full_name": "Kiln-AI/Kiln",
+    "private": false,
+    "owner": {
+      "login": "Kiln-AI",
+      "type": "Organization"
+    }
+  },
+  "sender": {
+    "login": "circleci-app[bot]",
+    "id": 4,
+    "type": "Bot"
+  },
+  "installation": {
+    "id": 67890
+  }
+}

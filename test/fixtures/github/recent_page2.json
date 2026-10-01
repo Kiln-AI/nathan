@@ -1,0 +1,56 @@
+{
+  "data": {
+    "r0": {
+      "pullRequests": {
+        "pageInfo": {
+          "hasNextPage": true,
+          "endCursor": "cmVjZW50OjQ="
+        },
+        "nodes": [
+          {
+            "number": 110,
+            "title": "Old cleanup",
+            "url": "https://github.com/Kiln-AI/Kiln/pull/110",
+            "state": "CLOSED",
+            "isDraft": false,
+            "createdAt": "2026-09-01T10:00:00Z",
+            "updatedAt": "2026-09-25T10:00:00Z",
+            "mergedAt": null,
+            "closedAt": "2026-09-25T10:00:00Z",
+            "author": {
+              "__typename": "User",
+              "login": "bob"
+            },
+            "reviews": {
+              "nodes": []
+            },
+            "timelineItems": {
+              "nodes": []
+            }
+          },
+          {
+            "number": 105,
+            "title": "Older still",
+            "url": "https://github.com/Kiln-AI/Kiln/pull/105",
+            "state": "MERGED",
+            "isDraft": false,
+            "createdAt": "2026-08-01T10:00:00Z",
+            "updatedAt": "2026-09-10T10:00:00Z",
+            "mergedAt": "2026-09-10T10:00:00Z",
+            "closedAt": "2026-09-10T10:00:00Z",
+            "author": {
+              "__typename": "User",
+              "login": "bob"
+            },
+            "reviews": {
+              "nodes": []
+            },
+            "timelineItems": {
+              "nodes": []
+            }
+          }
+        ]
+      }
+    }
+  }
+}

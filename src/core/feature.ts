@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import type { GitHubGateway, GitHubRegistry } from "../github";
 import type { SlackClient, SlackRegistry } from "../slack";
 import type { Db } from "./db";
 import type { UserDirectory } from "./directory";
@@ -33,6 +34,8 @@ export interface Registrar<C> {
   services: Services;
   /** Shortcuts, modals, buttons, `/nathan` subcommands and App Home sections. */
   slack: SlackRegistry;
+  /** GitHub webhook handlers. */
+  github: GitHubRegistry;
   jobs: {
     /** Registered as "<featureId>.<name>". */
     define<P>(name: string, schema: z.ZodType<P>, handler: JobHandler<P>, options?: JobOptions<P>): JobRef<P>;
@@ -41,10 +44,12 @@ export interface Registrar<C> {
   schedule(task: ScheduledTask): void;
 }
 
-/** Shared services. The GitHub gateway joins in phase 3. */
+/** Shared services. */
 export interface Services {
   /** Outbound Slack API. In dry run, posts go to the test channel with mentions defused. */
   slack: SlackClient;
+  /** Read-only GitHub queries plus the allow-listed writer. In dry run, the writer only logs. */
+  github: GitHubGateway;
   directory: UserDirectory;
   db: Db;
   clock: Clock;

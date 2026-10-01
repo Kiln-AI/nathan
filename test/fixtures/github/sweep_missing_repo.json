@@ -1,0 +1,94 @@
+{
+  "data": {
+    "r0": null,
+    "r1": {
+      "pullRequests": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
+        "nodes": [
+          {
+            "id": "PR_kw7",
+            "number": 7,
+            "title": "WIP: reminders",
+            "url": "https://github.com/Kiln-AI/nathan/pull/7",
+            "state": "OPEN",
+            "isDraft": true,
+            "createdAt": "2026-10-01T09:00:00Z",
+            "updatedAt": "2026-10-02T09:00:00Z",
+            "mergedAt": null,
+            "closedAt": null,
+            "additions": 10,
+            "deletions": 2,
+            "baseRefName": "main",
+            "headRefOid": "0000000000000000000000000000000000000007",
+            "mergeable": "UNKNOWN",
+            "author": {
+              "__typename": "User",
+              "login": "bob"
+            },
+            "reviewRequests": {
+              "nodes": []
+            },
+            "latestOpinionatedReviews": {
+              "nodes": []
+            },
+            "latestReviews": {
+              "nodes": []
+            },
+            "timelineItems": {
+              "nodes": [
+                {
+                  "__typename": "ConvertToDraftEvent",
+                  "createdAt": "2026-10-01T09:30:00Z"
+                }
+              ]
+            },
+            "commits": {
+              "nodes": [
+                {
+                  "commit": {
+                    "statusCheckRollup": {
+                      "contexts": {
+                        "pageInfo": {
+                          "hasNextPage": false
+                        },
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "build",
+                            "status": "IN_PROGRESS",
+                            "conclusion": null,
+                            "startedAt": "2026-10-02T08:59:00Z",
+                            "completedAt": null
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "rateLimit": {
+      "cost": 1
+    }
+  },
+  "errors": [
+    {
+      "type": "NOT_FOUND",
+      "path": ["r0"],
+      "locations": [
+        {
+          "line": 2,
+          "column": 3
+        }
+      ],
+      "message": "Could not resolve to a Repository with the name 'Kiln-AI/gone'."
+    }
+  ]
+}

@@ -41,7 +41,7 @@ Behavior config lives in `nathan.config.ts` (users, channels, features), reviewe
 Secrets are set per environment with `npx wrangler secret put <NAME> --env <env>` and never committed. Locally, put them in `.dev.vars` (git-ignored).
 
 - Slack: `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET` (see [Slack app](#slack-app)). Nathan refuses to start without them.
-- GitHub: `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_INSTALLATION_ID`, `GITHUB_WEBHOOK_SECRET` *(phase 3)*
+- GitHub: `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_INSTALLATION_ID`, `GITHUB_WEBHOOK_SECRET` (see [GitHub App](#github-app)). Nathan refuses to start without them, or with a PKCS#1 private key.
 
 ## Slack app
 
@@ -73,9 +73,48 @@ Notes:
   SLACK_SIGNING_SECRET=…
   ```
 
-## GitHub App *(phase 3)*
+## GitHub App
 
-TODO: create the App with the documented permissions and events, convert its private key to PKCS#8, and install it on the tracked repos.
+Each environment has its own GitHub App, because an App has one webhook URL. Staging's App is installed on the same repos as production's; staging runs in dry run, so it only reads.
+
+For each environment:
+
+1. Generate a webhook secret, e.g. `openssl rand -hex 32`, and keep it for step 2 and step 5.
+2. In the org's **Settings → Developer settings → GitHub Apps → New GitHub App**:
+   - **Name:** "Nathan" (production) or "Nathan (staging)".
+   - **Homepage URL:** the repo URL.
+   - **Webhook:** active, URL `https://nathan-<env>.<subdomain>.workers.dev/github/webhooks`, and the secret from step 1.
+   - **Repository permissions** (nothing else):
+
+     | Permission | Access | Used for |
+     |---|---|---|
+     | Metadata | Read | Required by every App |
+     | Pull requests | Read & write | Reading PRs, reviews and review requests; **write is only used to request reviewers** |
+     | Checks | Read | CI check runs |
+     | Commit statuses | Read | CI from external services (commit statuses) |
+
+   - **Subscribe to events:** Pull request, Pull request review, Check run, Status.
+   - **Where can this GitHub App be installed?** Only on this account.
+3. After creating it, note the **App ID** on the App's page. Under **Private keys**, click **Generate a private key**; a `.pem` file downloads.
+4. Convert the key to PKCS#8. GitHub hands out PKCS#1 (`-----BEGIN RSA PRIVATE KEY-----`), but Workers' Web Crypto only reads PKCS#8 (`-----BEGIN PRIVATE KEY-----`):
+   ```sh
+   openssl pkcs8 -topk8 -nocrypt -in key.pem -out key.pk8.pem
+   ```
+5. **Install App** on the org, choosing **Only select repositories** and every repo in `pr_management.repos`. The installation ID is the number at the end of the installation's settings URL (`…/settings/installations/<id>`).
+6. Set the secrets and deploy:
+   ```sh
+   npx wrangler secret put GITHUB_APP_ID --env <env>            # the App ID
+   npx wrangler secret put GITHUB_INSTALLATION_ID --env <env>   # from step 5
+   npx wrangler secret put GITHUB_WEBHOOK_SECRET --env <env>    # from step 1
+   npx wrangler secret put GITHUB_APP_PRIVATE_KEY --env <env> < key.pk8.pem
+   ```
+   Then delete both `.pem` files from your machine. A lost key is replaced by generating a new one on the App's page.
+7. Check it works: on the App's **Advanced** tab, the first delivery (`ping`) should show a `202` response. Redeliver it if it was sent before the Worker had its secrets.
+
+Notes:
+
+- Adding a repo to `pr_management.repos` also needs the repo added to both Apps' installations (**Configure → Repository access**). The hourly sweep logs a warning for configured repos the App can't see.
+- Local development (`npm run dev`) reads the same four secrets from `.dev.vars`. The private key can be on one line with `\n` for newlines.
 
 ## Deploying
 

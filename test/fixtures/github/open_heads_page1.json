@@ -1,0 +1,22 @@
+{
+  "data": {
+    "repository": {
+      "pullRequests": {
+        "pageInfo": {
+          "hasNextPage": true,
+          "endCursor": "aGVhZHM6MQ=="
+        },
+        "nodes": [
+          {
+            "number": 101,
+            "headRefOid": "aaaa000000000000000000000000000000000001"
+          },
+          {
+            "number": 102,
+            "headRefOid": "bbbb000000000000000000000000000000000002"
+          }
+        ]
+      }
+    }
+  }
+}

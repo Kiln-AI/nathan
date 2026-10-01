@@ -1,6 +1,10 @@
 import { DateTime } from "luxon";
 import rawConfig from "../../nathan.config";
 import { features as registeredFeatures } from "../features";
+import type { GitHubGateway } from "../github";
+import { readGitHubAppCredentials } from "../github/auth";
+import { createGitHubGateway, withDryRunWriter } from "../github/gateway";
+import { createGitHubWebhookRoute, GitHubHandlers } from "../github/webhooks";
 import type { SlackClient } from "../slack";
 import { createSlackApiClient } from "../slack/client";
 import { createDryRunSlackClient } from "../slack/dry_run";
@@ -40,6 +44,8 @@ export interface AppOverrides {
   clock?: Clock;
   /** Replaces the Slack Web API client (dry-run wrapping still applies). */
   slack?: SlackClient;
+  /** Replaces the GitHub gateway (the dry-run writer still applies). */
+  github?: GitHubGateway;
   queue?: JobQueue;
   log?: Logger;
 }
@@ -73,6 +79,10 @@ export function createApp(env: Env, overrides: AppOverrides = {}): App {
     log,
   });
   const slack = withDryRun(slackApi, config, directory);
+  const githubCredentials = readGitHubAppCredentials(env);
+  const githubApi =
+    overrides.github ?? createGitHubGateway({ credentials: githubCredentials, kv: env.NATHAN_KV, clock, log });
+  const github = config.platform.dryRun ? withDryRunWriter(githubApi, log) : githubApi;
   const reportError = createErrorReporter({
     log,
     db,
@@ -90,15 +100,17 @@ export function createApp(env: Env, overrides: AppOverrides = {}): App {
     createDebouncedHandler({ db, clock, registry: jobs, enqueue }),
   );
   const debounce = createDebounce({ db, clock, enqueue, debouncedJob });
-  const services: Services = { slack, directory, db, clock, log, reportError, enqueue, debounce };
+  const services: Services = { slack, github, directory, db, clock, log, reportError, enqueue, debounce };
 
   const scheduler = new Scheduler({ db, reportError });
   const slackHandlers = new SlackHandlers();
+  const githubHandlers = new GitHubHandlers();
 
   const registrarFor = <C>(featureId: string, featureConfig: C): Registrar<C> => ({
     config: featureConfig,
     services: { ...services, log: log.child({ feature: featureId }) },
     slack: slackHandlers.forFeature(featureId),
+    github: githubHandlers.forFeature(featureId),
     jobs: {
       define: (name, schema, handler, options) => jobs.define(`${featureId}.${name}`, schema, handler, options),
     },
@@ -118,9 +130,18 @@ export function createApp(env: Env, overrides: AppOverrides = {}): App {
     reportError,
     log,
   });
+  const githubWebhooks = createGitHubWebhookRoute({
+    secret: githubCredentials.webhookSecret,
+    handlers: githubHandlers,
+    db,
+    clock,
+    reportError,
+    log,
+  });
   const router = new Router();
   router.on("GET", "/healthz", () => Response.json({ env: config.env, version: env.CF_VERSION_METADATA?.id ?? "dev" }));
   router.on("POST", "/slack/events", (request, ctx) => slackGateway.handle(request, ctx));
+  router.on("POST", "/github/webhooks", (request) => githubWebhooks.handle(request));
 
   return {
     config,

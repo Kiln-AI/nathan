@@ -1,0 +1,266 @@
+{
+  "data": {
+    "r0": {
+      "pullRequests": {
+        "pageInfo": {
+          "hasNextPage": true,
+          "endCursor": "Y3Vyc29yOjI="
+        },
+        "nodes": [
+          {
+            "id": "PR_kw101",
+            "number": 101,
+            "title": "Speed up the eval runner",
+            "url": "https://github.com/Kiln-AI/Kiln/pull/101",
+            "state": "OPEN",
+            "isDraft": false,
+            "createdAt": "2026-10-01T09:00:00Z",
+            "updatedAt": "2026-10-02T09:00:00Z",
+            "mergedAt": null,
+            "closedAt": null,
+            "additions": 10,
+            "deletions": 2,
+            "baseRefName": "main",
+            "headRefOid": "0000000000000000000000000000000000000065",
+            "mergeable": "MERGEABLE",
+            "author": {
+              "__typename": "User",
+              "login": "alice"
+            },
+            "reviewRequests": {
+              "nodes": [
+                {
+                  "requestedReviewer": {
+                    "__typename": "User",
+                    "login": "bob"
+                  }
+                },
+                {
+                  "requestedReviewer": {
+                    "__typename": "Team",
+                    "slug": "core-team"
+                  }
+                },
+                {
+                  "requestedReviewer": {
+                    "__typename": "Bot",
+                    "login": "copilot-pull-request-reviewer"
+                  }
+                }
+              ]
+            },
+            "latestOpinionatedReviews": {
+              "nodes": [
+                {
+                  "state": "CHANGES_REQUESTED",
+                  "submittedAt": "2026-10-01T14:00:00Z",
+                  "author": {
+                    "__typename": "User",
+                    "login": "carol"
+                  }
+                }
+              ]
+            },
+            "latestReviews": {
+              "nodes": [
+                {
+                  "state": "COMMENTED",
+                  "submittedAt": "2026-10-01T16:00:00Z",
+                  "author": {
+                    "__typename": "User",
+                    "login": "carol"
+                  }
+                },
+                {
+                  "state": "COMMENTED",
+                  "submittedAt": "2026-10-01T15:00:00Z",
+                  "author": {
+                    "__typename": "User",
+                    "login": "dave"
+                  }
+                }
+              ]
+            },
+            "timelineItems": {
+              "nodes": [
+                {
+                  "__typename": "ConvertToDraftEvent",
+                  "createdAt": "2026-10-01T10:00:00Z"
+                },
+                {
+                  "__typename": "ReadyForReviewEvent",
+                  "createdAt": "2026-10-01T12:00:00Z"
+                }
+              ]
+            },
+            "commits": {
+              "nodes": [
+                {
+                  "commit": {
+                    "statusCheckRollup": {
+                      "contexts": {
+                        "pageInfo": {
+                          "hasNextPage": false
+                        },
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "test",
+                            "status": "COMPLETED",
+                            "conclusion": "FAILURE",
+                            "startedAt": "2026-10-01T09:50:00Z",
+                            "completedAt": "2026-10-01T10:00:00Z"
+                          },
+                          {
+                            "__typename": "CheckRun",
+                            "name": "test",
+                            "status": "COMPLETED",
+                            "conclusion": "SUCCESS",
+                            "startedAt": "2026-10-01T10:50:00Z",
+                            "completedAt": "2026-10-01T11:00:00Z"
+                          },
+                          {
+                            "__typename": "CheckRun",
+                            "name": "lint",
+                            "status": "COMPLETED",
+                            "conclusion": "FAILURE",
+                            "startedAt": "2026-10-01T10:50:00Z",
+                            "completedAt": "2026-10-01T10:55:00Z"
+                          },
+                          {
+                            "__typename": "StatusContext",
+                            "context": "ci/circleci",
+                            "state": "SUCCESS",
+                            "createdAt": "2026-10-01T11:00:00Z"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "id": "PR_kw102",
+            "number": 102,
+            "title": "Bump vite from 7.1.0 to 7.1.5",
+            "url": "https://github.com/Kiln-AI/Kiln/pull/102",
+            "state": "OPEN",
+            "isDraft": false,
+            "createdAt": "2026-10-01T09:00:00Z",
+            "updatedAt": "2026-10-02T09:00:00Z",
+            "mergedAt": null,
+            "closedAt": null,
+            "additions": 3,
+            "deletions": 3,
+            "baseRefName": "main",
+            "headRefOid": "0000000000000000000000000000000000000066",
+            "mergeable": "CONFLICTING",
+            "author": {
+              "__typename": "Bot",
+              "login": "dependabot"
+            },
+            "reviewRequests": {
+              "nodes": []
+            },
+            "latestOpinionatedReviews": {
+              "nodes": []
+            },
+            "latestReviews": {
+              "nodes": []
+            },
+            "timelineItems": {
+              "nodes": []
+            },
+            "commits": {
+              "nodes": [
+                {
+                  "commit": {
+                    "statusCheckRollup": null
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "r1": {
+      "pullRequests": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
+        "nodes": [
+          {
+            "id": "PR_kw7",
+            "number": 7,
+            "title": "WIP: reminders",
+            "url": "https://github.com/Kiln-AI/nathan/pull/7",
+            "state": "OPEN",
+            "isDraft": true,
+            "createdAt": "2026-10-01T09:00:00Z",
+            "updatedAt": "2026-10-02T09:00:00Z",
+            "mergedAt": null,
+            "closedAt": null,
+            "additions": 10,
+            "deletions": 2,
+            "baseRefName": "main",
+            "headRefOid": "0000000000000000000000000000000000000007",
+            "mergeable": "UNKNOWN",
+            "author": {
+              "__typename": "User",
+              "login": "bob"
+            },
+            "reviewRequests": {
+              "nodes": []
+            },
+            "latestOpinionatedReviews": {
+              "nodes": []
+            },
+            "latestReviews": {
+              "nodes": []
+            },
+            "timelineItems": {
+              "nodes": [
+                {
+                  "__typename": "ConvertToDraftEvent",
+                  "createdAt": "2026-10-01T09:30:00Z"
+                }
+              ]
+            },
+            "commits": {
+              "nodes": [
+                {
+                  "commit": {
+                    "statusCheckRollup": {
+                      "contexts": {
+                        "pageInfo": {
+                          "hasNextPage": false
+                        },
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "build",
+                            "status": "IN_PROGRESS",
+                            "conclusion": null,
+                            "startedAt": "2026-10-02T08:59:00Z",
+                            "completedAt": null
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "rateLimit": {
+      "cost": 3
+    }
+  }
+}

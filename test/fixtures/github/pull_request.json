@@ -1,0 +1,90 @@
+{
+  "data": {
+    "repository": {
+      "pullRequest": {
+        "id": "PR_kw99",
+        "number": 99,
+        "title": "Ship the release",
+        "url": "https://github.com/Kiln-AI/Kiln/pull/99",
+        "state": "MERGED",
+        "isDraft": false,
+        "createdAt": "2026-10-01T09:00:00Z",
+        "updatedAt": "2026-10-02T09:00:00Z",
+        "mergedAt": "2026-10-03T12:00:00Z",
+        "closedAt": "2026-10-03T12:00:00Z",
+        "additions": 10,
+        "deletions": 2,
+        "baseRefName": "main",
+        "headRefOid": "0000000000000000000000000000000000000063",
+        "mergeable": "MERGEABLE",
+        "author": {
+          "__typename": "User",
+          "login": "alice"
+        },
+        "reviewRequests": {
+          "nodes": []
+        },
+        "latestOpinionatedReviews": {
+          "nodes": [
+            {
+              "state": "APPROVED",
+              "submittedAt": "2026-10-03T11:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "bob"
+              }
+            }
+          ]
+        },
+        "latestReviews": {
+          "nodes": [
+            {
+              "state": "APPROVED",
+              "submittedAt": "2026-10-03T11:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "bob"
+              }
+            }
+          ]
+        },
+        "timelineItems": {
+          "nodes": []
+        },
+        "commits": {
+          "nodes": [
+            {
+              "commit": {
+                "statusCheckRollup": {
+                  "contexts": {
+                    "pageInfo": {
+                      "hasNextPage": false
+                    },
+                    "nodes": [
+                      {
+                        "__typename": "CheckRun",
+                        "name": "test",
+                        "status": "COMPLETED",
+                        "conclusion": "FAILURE",
+                        "startedAt": "2026-10-03T10:00:00Z",
+                        "completedAt": "2026-10-03T10:10:00Z",
+                        "isRequired": false
+                      },
+                      {
+                        "__typename": "StatusContext",
+                        "context": "ci/circleci",
+                        "state": "SUCCESS",
+                        "createdAt": "2026-10-03T10:00:00Z",
+                        "isRequired": true
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

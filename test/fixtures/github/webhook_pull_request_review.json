@@ -1,0 +1,68 @@
+{
+  "action": "submitted",
+  "review": {
+    "id": 5,
+    "state": "approved",
+    "user": {
+      "login": "bob",
+      "type": "User"
+    }
+  },
+  "pull_request": {
+    "id": 9001,
+    "number": 101,
+    "state": "open",
+    "draft": false,
+    "title": "Speed up the eval runner",
+    "user": {
+      "login": "alice",
+      "type": "User"
+    },
+    "head": {
+      "ref": "faster-evals",
+      "sha": "aaaa000000000000000000000000000000000001",
+      "repo": {
+        "id": 600001,
+        "name": "Kiln",
+        "full_name": "Kiln-AI/Kiln",
+        "private": false,
+        "owner": {
+          "login": "Kiln-AI",
+          "type": "Organization"
+        }
+      }
+    },
+    "base": {
+      "ref": "main",
+      "sha": "cccc000000000000000000000000000000000003",
+      "repo": {
+        "id": 600001,
+        "name": "Kiln",
+        "full_name": "Kiln-AI/Kiln",
+        "private": false,
+        "owner": {
+          "login": "Kiln-AI",
+          "type": "Organization"
+        }
+      }
+    }
+  },
+  "repository": {
+    "id": 600001,
+    "name": "Kiln",
+    "full_name": "Kiln-AI/Kiln",
+    "private": false,
+    "owner": {
+      "login": "Kiln-AI",
+      "type": "Organization"
+    }
+  },
+  "sender": {
+    "login": "bob",
+    "id": 2,
+    "type": "User"
+  },
+  "installation": {
+    "id": 67890
+  }
+}

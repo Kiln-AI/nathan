@@ -3,10 +3,12 @@ import { env } from "cloudflare:workers";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createApp, getApp } from "../../src/core/app";
-import { defineFeature, type Feature } from "../../src/core/feature";
+import { defineFeature, type Feature, type Services } from "../../src/core/feature";
 import worker from "../../src/index";
 import { aConfig } from "../builders/config";
+import { aPR } from "../builders/github";
 import { fakeBatch, fakeMessage } from "../fakes/batch";
+import { FakeGitHub } from "../fakes/github";
 import { testApp } from "../helpers/app";
 
 function recordingFeature(id: string, onTask: () => Promise<void> = async () => {}) {
@@ -143,6 +145,54 @@ describe("createApp", () => {
     expect(() => createApp({ ...env, [name]: "" }, { config: aConfig(), features: [] })).toThrow(
       `Missing secret ${name}`,
     );
+  });
+
+  it.each(["GITHUB_APP_ID", "GITHUB_APP_PRIVATE_KEY", "GITHUB_INSTALLATION_ID", "GITHUB_WEBHOOK_SECRET"])(
+    "fails to start without the %s secret",
+    (name) => {
+      expect(() => createApp({ ...env, [name]: "" }, { config: aConfig(), features: [] })).toThrow(
+        `Missing secret ${name}`,
+      );
+    },
+  );
+
+  it("fails to start with GitHub's PKCS#1 private key, even with an injected gateway", () => {
+    const pkcs1Env = { ...env, GITHUB_APP_PRIVATE_KEY: env.TEST_GITHUB_PKCS1_KEY };
+    expect(() => createApp(pkcs1Env, { config: aConfig(), features: [], github: new FakeGitHub() })).toThrow(
+      "GITHUB_APP_PRIVATE_KEY is a PKCS#1 key",
+    );
+  });
+
+  it("gives features the GitHub registry and gateway", async () => {
+    let services: Services | undefined;
+    const feature = defineFeature({
+      id: "alpha",
+      configSchema: z.object({}),
+      register: (r) => {
+        r.github.on("pull_request", async () => {});
+        services = r.services;
+      },
+    });
+    const github = new FakeGitHub([aPR({ number: 7 })]);
+    testApp({ features: [feature], config: aConfig({ features: { alpha: { enabled: true } } }), github });
+    expect((await services?.github.reader.pullRequest("Kiln-AI/Kiln", 7))?.number).toBe(7);
+  });
+
+  it("replaces the GitHub writer with a logger in dry run", async () => {
+    const github = new FakeGitHub([aPR({ number: 7 })]);
+    const h = testApp({ config: aConfig({ dryRun: true, testChannel: "CTEST" }), github });
+    await h.app.services.github.writer.requestReviewers("Kiln-AI/Kiln", 7, ["bob"]);
+    expect(github.reviewerRequests).toEqual([]);
+    expect(h.log.at("info").map((e) => e.msg)).toContain("dry run: would request reviewers");
+    expect((await h.app.services.github.reader.pullRequest("Kiln-AI/Kiln", 7))?.number).toBe(7);
+  });
+
+  it("writes to GitHub when not in dry run", async () => {
+    const github = new FakeGitHub([aPR({ number: 7 })]);
+    const h = testApp({ github });
+    await h.app.services.github.writer.requestReviewers("Kiln-AI/Kiln", 7, ["bob"]);
+    expect(github.reviewerRequests).toEqual([{ repo: "Kiln-AI/Kiln", number: 7, logins: ["bob"] }]);
+    expect(github.prs[0]?.pendingReviewers).toEqual(["bob"]);
   });
 
   it("gives features the Slack registry and the user directory", async () => {

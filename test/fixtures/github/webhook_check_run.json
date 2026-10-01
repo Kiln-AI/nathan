@@ -1,0 +1,70 @@
+{
+  "action": "completed",
+  "check_run": {
+    "id": 77,
+    "name": "test",
+    "head_sha": "aaaa000000000000000000000000000000000001",
+    "status": "completed",
+    "conclusion": "failure",
+    "pull_requests": [
+      {
+        "id": 9001,
+        "number": 101,
+        "head": {
+          "ref": "faster-evals",
+          "sha": "aaaa000000000000000000000000000000000001",
+          "repo": {
+            "id": 600001,
+            "name": "Kiln"
+          }
+        },
+        "base": {
+          "ref": "main",
+          "sha": "cccc000000000000000000000000000000000003",
+          "repo": {
+            "id": 600001,
+            "name": "Kiln"
+          }
+        }
+      },
+      {
+        "id": 9900,
+        "number": 12,
+        "head": {
+          "ref": "faster-evals",
+          "sha": "aaaa000000000000000000000000000000000001",
+          "repo": {
+            "id": 800001,
+            "name": "other"
+          }
+        },
+        "base": {
+          "ref": "main",
+          "sha": "dddd000000000000000000000000000000000004",
+          "repo": {
+            "id": 800001,
+            "name": "other"
+          }
+        }
+      }
+    ]
+  },
+  "repository": {
+    "id": 600001,
+    "name": "Kiln",
+    "full_name": "Kiln-AI/Kiln",
+    "private": false,
+    "owner": {
+      "login": "Kiln-AI",
+      "type": "Organization"
+    }
+  },
+  "sender": {
+    "login": "github-actions[bot]",
+    "id": 3,
+    "type": "Bot"
+  },
+  "installation": {
+    "id": 67890
+  }
+}

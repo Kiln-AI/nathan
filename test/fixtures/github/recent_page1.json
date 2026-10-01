@@ -1,0 +1,125 @@
+{
+  "data": {
+    "r0": {
+      "pullRequests": {
+        "pageInfo": {
+          "hasNextPage": true,
+          "endCursor": "cmVjZW50OjI="
+        },
+        "nodes": [
+          {
+            "number": 120,
+            "title": "Faster evals",
+            "url": "https://github.com/Kiln-AI/Kiln/pull/120",
+            "state": "MERGED",
+            "isDraft": false,
+            "createdAt": "2026-09-28T10:00:00Z",
+            "updatedAt": "2026-10-04T10:00:00Z",
+            "mergedAt": "2026-10-04T10:00:00Z",
+            "closedAt": "2026-10-04T10:00:00Z",
+            "author": {
+              "__typename": "User",
+              "login": "alice"
+            },
+            "reviews": {
+              "nodes": [
+                {
+                  "state": "APPROVED",
+                  "submittedAt": "2026-10-03T10:00:00Z",
+                  "author": {
+                    "__typename": "User",
+                    "login": "bob"
+                  }
+                },
+                {
+                  "state": "COMMENTED",
+                  "submittedAt": "2026-09-30T10:00:00Z",
+                  "author": {
+                    "__typename": "User",
+                    "login": "carol"
+                  }
+                },
+                {
+                  "state": "PENDING",
+                  "submittedAt": null,
+                  "author": {
+                    "__typename": "User",
+                    "login": "dave"
+                  }
+                }
+              ]
+            },
+            "timelineItems": {
+              "nodes": [
+                {
+                  "createdAt": "2026-09-29T09:00:00Z"
+                }
+              ]
+            }
+          },
+          {
+            "number": 118,
+            "title": "Docs refresh",
+            "url": "https://github.com/Kiln-AI/Kiln/pull/118",
+            "state": "OPEN",
+            "isDraft": false,
+            "createdAt": "2026-09-20T10:00:00Z",
+            "updatedAt": "2026-10-01T10:00:00Z",
+            "mergedAt": null,
+            "closedAt": null,
+            "author": {
+              "__typename": "User",
+              "login": "bob"
+            },
+            "reviews": {
+              "nodes": [
+                {
+                  "state": "CHANGES_REQUESTED",
+                  "submittedAt": "2026-10-01T10:00:00Z",
+                  "author": {
+                    "__typename": "User",
+                    "login": "alice"
+                  }
+                }
+              ]
+            },
+            "timelineItems": {
+              "nodes": []
+            }
+          }
+        ]
+      }
+    },
+    "r1": {
+      "pullRequests": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
+        "nodes": [
+          {
+            "number": 8,
+            "title": "Bump zod",
+            "url": "https://github.com/Kiln-AI/nathan/pull/8",
+            "state": "MERGED",
+            "isDraft": false,
+            "createdAt": "2026-10-02T10:00:00Z",
+            "updatedAt": "2026-10-02T12:00:00Z",
+            "mergedAt": "2026-10-02T12:00:00Z",
+            "closedAt": "2026-10-02T12:00:00Z",
+            "author": {
+              "__typename": "Bot",
+              "login": "dependabot"
+            },
+            "reviews": {
+              "nodes": []
+            },
+            "timelineItems": {
+              "nodes": []
+            }
+          }
+        ]
+      }
+    }
+  }
+}
