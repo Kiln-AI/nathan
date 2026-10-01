@@ -59,11 +59,11 @@
         {
           "binding": "DB",
           "database_name": "nathan-production",
-          "database_id": "REPLACE_WITH_PRODUCTION_D1_ID",
+          "database_id": "4d6880ac-9f9c-47ec-a10f-141ef17e961c",
           "migrations_dir": "migrations"
         }
       ],
-      "kv_namespaces": [{ "binding": "NATHAN_KV", "id": "REPLACE_WITH_PRODUCTION_KV_ID" }],
+      "kv_namespaces": [{ "binding": "NATHAN_KV", "id": "069e1f5b21294adba13e8cdb93815248" }],
       "queues": {
         "producers": [{ "binding": "JOBS", "queue": "nathan-jobs-production" }],
         "consumers": [
