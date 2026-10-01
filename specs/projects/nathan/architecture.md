@@ -264,7 +264,7 @@ There are two sources of truth:
 
 ## 8. Security
 
-- **GitHub App permissions:** Metadata R, Pull requests R/W, Checks R, Commit statuses R. Subscribed events: `pull_request`, `pull_request_review`, `check_run`, `status`.
+- **GitHub App permissions:** Metadata R, Pull requests R/W, Checks R, Commit statuses R, Contents R (private repos: a PR's commits, and so its CI, are unreadable without it). Subscribed events: `pull_request`, `pull_request_review`, `check_run`, `status`.
 - **The only GitHub write path is `GitHubWriter.requestReviewers`.** The Octokit instance is module-private to `src/github/`. The reader exposes only typed query functions, and its GraphQL helper rejects any document containing `mutation`. A unit test asserts the writer's public surface is exactly `{ requestReviewers }`.
 - **Private key:** stored as a PKCS#8 PEM in the secret `GITHUB_APP_PRIVATE_KEY`. `docs/setup.md` gives the conversion command (`openssl pkcs8 -topk8 -nocrypt -in key.pem -out key.pk8.pem`). At startup the key header is checked, and a PKCS#1 header (`BEGIN RSA PRIVATE KEY`) throws a clear error.
 - **Secrets** are set with `wrangler secret put` per environment: `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET`, `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_INSTALLATION_ID`, `GITHUB_WEBHOOK_SECRET`. An empty or missing secret throws at startup.

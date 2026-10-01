@@ -123,6 +123,7 @@ For each environment:
      | Pull requests | Read & write | Reading PRs, reviews and review requests; **write is only used to request reviewers** |
      | Checks | Read | CI check runs |
      | Commit statuses | Read | CI from external services (commit statuses) |
+     | Contents | Read | A PR's head commit and its CI in **private** repos (public repos work without it) |
 
    - **Subscribe to events:** Pull request, Pull request review, Check run, Status. (Merge queues need nothing more: entering and leaving one are Pull request events, and the queue state is read with Pull requests read.)
    - **Where can this GitHub App be installed?** Only on this account.
