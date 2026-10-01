@@ -38,11 +38,11 @@
         {
           "binding": "DB",
           "database_name": "nathan-staging",
-          "database_id": "REPLACE_WITH_STAGING_D1_ID",
+          "database_id": "00b79ebe-6ede-4926-be91-ef7edfd27bda",
           "migrations_dir": "migrations"
         }
       ],
-      "kv_namespaces": [{ "binding": "NATHAN_KV", "id": "REPLACE_WITH_STAGING_KV_ID" }],
+      "kv_namespaces": [{ "binding": "NATHAN_KV", "id": "572d5d969e2e4e7a9c9fe504a0ccf88f" }],
       "queues": {
         "producers": [{ "binding": "JOBS", "queue": "nathan-jobs-staging" }],
         "consumers": [

@@ -50,6 +50,8 @@ npx wrangler queues create nathan-jobs-<env>
 npx wrangler queues create nathan-jobs-<env>-dlq
 ```
 
+`scripts/setup-cloudflare.sh <env>` does all four (reusing any that already exist) and writes the IDs into `wrangler.jsonc`.
+
 Your `workers.dev` subdomain is shown in the Cloudflare dashboard under **Workers & Pages** (or pick a custom domain). The Worker's URL, `https://nathan-<env>.<subdomain>.workers.dev`, is fixed before the first deploy, so the apps below can point at it already.
 
 The deploy workflows apply database migrations on every deploy. To apply them by hand:
