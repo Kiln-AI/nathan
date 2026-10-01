@@ -1,5 +1,5 @@
 ---
-status: draft
+status: complete
 ---
 
 # Architecture: Nathan
@@ -300,15 +300,15 @@ There are two sources of truth:
   - everything else: meaningful paths, including every error row in §7
 - **Local dev loop:** run the tests. For live behavior, use `workflow_dispatch` to deploy a branch to staging (dry run into `#nathan-test`). `npm run dev` (`wrangler dev`) works with a tunnel, but isn't required.
 
-## 11. Components
+## 11. Component Areas
 
-The project is big enough for an architecture doc plus component designs:
+There are no separate component docs: the user chose to go straight to the implementation plan. Each phase's coding agent designs its component's internals in its phase plan (`phase_plans/phase_N.md`). That design stays within this architecture, the functional spec and the research. The areas, with the research docs to read for each:
 
-| Component | Doc | Contents |
+| Area | Covers | Read |
 |---|---|---|
-| Slack gateway | [components/slack_gateway.md](components/slack_gateway.md) | `SlackClient` and `SlackRegistry` interfaces, the slack-edge adapter (cached authorize, lazy/ack rules), `/nathan` subcommand router, App Home composition, dry-run wrapper, Block Kit helpers, manifest |
-| GitHub gateway | [components/github_gateway.md](components/github_gateway.md) | Auth and token cache, `PRData` type and normalization, the sweep, single-PR and recent-PR queries, the two-phase `isRequired` check, webhook parsing and PR-key extraction (incl. fork `head_sha` lookup), writer |
-| PR state and sync | [components/pr_state_and_sync.md](components/pr_state_and_sync.md) | `computeStatus` (the §4.2 rules), `pr_prs`/`pr_events` schema, the refresh pipeline (diff → effects), the live card, handoffs, sweep, finalize |
-| Request PR | [components/pr_request_flow.md](components/pr_request_flow.md) | Modal, validation in the ack budget, the `request_review` job, partial failure handling |
-| Reminders and drafts | [components/pr_reminders.md](components/pr_reminders.md) | Due-level algorithm, per-owner time zones, templates and variant rotation, draft nudges |
-| Report and personal queue | [components/pr_report_and_queue.md](components/pr_report_and_queue.md) | Daily and Monday sections, metric definitions and queries, Block Kit size limits and splitting, App Home section, `/nathan prs` |
+| Slack gateway (`src/slack/`) | `SlackClient`/`SlackRegistry`, the slack-edge adapter (cached `authorize`, `startLazyListenerAfterAck: true`, lazy handlers re-check validity), `/nathan` router, App Home composition, dry-run wrapper, manifests | [slack-app-framework](research/platform-stack/slack-app-framework/summary.md) |
+| GitHub gateway (`src/github/`) | Auth plus KV token cache, `PRData` normalization, the sweep, single-PR and recent-PR queries, two-phase `isRequired`, webhook parsing and fork `head_sha` lookup, writer | [github-app-integration](research/platform-stack/github-app-integration/summary.md), especially `state-model-data.md`, `webhooks.md`, `workers-libraries.md` |
+| PR state and sync | `computeStatus` (spec §4.2), `pr_prs`/`pr_events`, refresh pipeline (diff → effects), card, handoffs, sweep, finalize | spec §4.1–4.5 |
+| Request PR | Modal, validation within the ack budget, `request_review` job, partial-failure DM | spec §4.3, [workers-ack-pattern](research/platform-stack/slack-app-framework/workers-ack-pattern.md) |
+| Reminders and drafts | Due-level algorithm, per-owner time zones, templates and variant rotation, draft DMs | spec §4.6, §4.8 |
+| Report and personal queue | Daily and Monday sections, metrics, Block Kit size limits and splitting, App Home, `/nathan prs` | spec §4.7, §4.9, [metrics.md](research/platform-stack/github-app-integration/metrics.md) |
