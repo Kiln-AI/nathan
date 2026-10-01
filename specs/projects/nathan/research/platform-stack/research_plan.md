@@ -18,7 +18,7 @@ Decide language, framework and libraries for Nathan, the team's Slack bot (proje
 ## Subtopics
 
 - [x] Slack app framework — Bolt JS and edge-compatible Slack libraries, and the Slack platform features Nathan's UX needs
-- [ ] GitHub App integration — permissions, webhooks, APIs and client libraries for Nathan's PR state model
+- [x] GitHub App integration — permissions, webhooks, APIs and client libraries for Nathan's PR state model
 
 ## Focus Details
 
