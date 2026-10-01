@@ -1,5 +1,5 @@
 ---
-status: draft
+status: complete
 ---
 
 # Functional Spec: Nathan
@@ -41,7 +41,7 @@ Off-the-shelf options (GitHub's Slack scheduled reminders, Axolo, Graphite, Line
 - **User directory**: maps Slack users to GitHub users (§6.2).
 - **Persistent storage**: small key/record storage for feature state (e.g., PR → Slack thread mapping, reminder counters).
 - **Scheduler**: cron-style jobs (e.g., the hourly reminder sweep and the daily report).
-- **Business-time utilities**: "business hours elapsed in time zone X" (Mon–Fri) and "is it working hours for person Y".
+- **Time utilities**: "hours elapsed excluding weekends, in time zone X".
 
 ### 3.3 Developer experience
 - Runs locally against a dev Slack workspace/channel and real or recorded GitHub data.
@@ -83,7 +83,7 @@ Rules are evaluated in order; the first match wins:
 | 5 | Required CI checks failing | `ci_failing` | Fix CI | author |
 | 6 | ≥1 pending requested reviewer | `awaiting_review` | Review | pending reviewers |
 | 7 | Any reviewer's latest review is "changes requested" | `changes_requested` | Address feedback & re-request review | author |
-| 8 | Approvals ≥ required (default 1, per-repo configurable) | `approved` | Merge | author |
+| 8 | ≥1 approval | `approved` | Merge | author |
 | 9 | Has reviews but none of the above | `needs_rerequest` | Re-request review or merge | author |
 | 10 | No reviewers requested, no reviews | `needs_reviewer` | Request a reviewer | author |
 
@@ -115,8 +115,7 @@ There are two equivalent entry points, and both end in the same state: reviewers
 
 **B. GitHub-originated**
 - When reviewers are requested on GitHub for a non-draft tracked PR (or a PR becomes ready-for-review with reviewers already requested), and the PR has no Nathan thread yet, Nathan posts the thread automatically, attributed to the PR author.
-- Reviewer-request events are **debounced** (2 minutes) so adding reviewers one at a time produces one post.
-- Dependabot PRs never get auto-posted threads (they're handled in the report, §4.7).
+- Reviewer-request events are **debounced** (1 minute) so adding reviewers one at a time produces one post.
 
 **Re-requests:** if a PR already has a thread, either entry point updates the existing message and adds a threaded reply. It never makes a duplicate top-level post.
 
@@ -143,13 +142,12 @@ There are two equivalent entry points, and both end in the same state: reviewers
 - Merge/close post no tag; the card update is enough.
 
 ### 4.6 Stale reminders
-- **Staleness clock:** business hours (Mon–Fri, in the **owner's** Slack time zone) since the PR entered its current state and owner set. Any state/owner change resets the clock and the escalation level.
-- **Threshold:** 24 business hours (1 business day) for all states. The `urgent` modifier shortens this to 4 business hours. Thresholds are configurable per state.
-- **Delivery:** an hourly sweep posts a threaded reply on the card, @-tagging each overdue owner. Reminders are only delivered during the owner's working hours (default 09:00–18:00 local, Mon–Fri). An owner who becomes due overnight is reminded at the start of their next working day.
+- **Staleness clock:** hours elapsed since the PR entered its current state and owner set. Weekend hours (Saturday and Sunday in the **owner's** Slack time zone) don't count, so tone doesn't escalate over a weekend nobody worked. Any state or owner change resets the clock and the escalation level.
+- **Threshold:** 24 hours (1 day) for all states. The `urgent` modifier shortens this to 4 hours. Thresholds are configurable per state.
+- **Delivery:** an hourly sweep posts a threaded reply on the card, @-tagging each overdue owner. Reminders are sent as soon as they're due, at any time of day. Team policy is "send anytime, read when you're working", so there are no quiet hours.
 - **Repeat:** after the first reminder, the next is due after another full threshold interval, at an escalation level one higher.
 - **Tone escalation:** configurable message templates grouped by level (1, 2, 3, 4+). Each level has several variants, picked at random (avoiding the variant used last time on that PR) so it stays fresh. Level 1 is friendly, and later levels get progressively more pointed and humorous. The highest level repeats indefinitely. Every reminder states the next step and age.
-- **Exclusions:** drafts (§4.8) and Dependabot PRs (report only, §4.7) get no stale reminders.
-- **Snooze:** each reminder has a "Snooze 1 business day" button, usable only by that reminder's owners, for legitimate waits (e.g., blocked on another PR). A snooze doesn't reset the escalation level.
+- **Exclusions:** drafts (§4.8) get no stale reminders. OSS and Dependabot PRs get the normal treatment (the triager owns author-side steps).
 
 ### 4.7 Daily report
 - Posted to `#prs` at **09:30 ET, Mon–Fri**. On Monday it covers the time since Friday's report.
@@ -158,19 +156,20 @@ There are two equivalent entry points, and both end in the same state: reviewers
   - opened and merged since last report
   - median and mean age of open PRs
 - **Needs attention:** stale PRs (past threshold) grouped by owner, each showing PR, state, next step and age. Sorted oldest first.
-- **People:** per team member:
-  - PRs authored and open
-  - reviews currently waiting on them
-  - PRs merged in the last 7 days
-  - reviews submitted in the last 7 days
 - **OSS contributors:** open OSS PRs with state, next step, age and triager.
-- **Dependabot:** count of open Dependabot PRs per repo and the oldest one's age, with the triager tagged if any are older than 7 days. Compact; does not list every PR.
+- **Dependabot:** open Dependabot PRs with state, next step, age and owner. Kept compact: one line per PR.
 - **Old drafts:** drafts older than 30 days, with author and age.
-- **Weekly trends (Monday only):** this week vs. last week, for team PRs:
-  - median time to first review
-  - median time to merge
-  - PRs merged
-  - median open-PR age
+- **Weekly sections (Monday only):**
+  - **Trends:** this week vs. last week, for team PRs:
+    - median time to first review
+    - median time to merge
+    - PRs merged
+    - median open-PR age
+  - **People:** per team member:
+    - PRs authored and open
+    - reviews currently waiting on them
+    - PRs merged in the last 7 days
+    - reviews submitted in the last 7 days
 - Empty sections are omitted. A day with nothing open posts a short "all clear 🎉".
 
 ### 4.8 Drafts
@@ -211,29 +210,29 @@ There are two equivalent entry points, and both end in the same state: reviewers
 - **Users:** list of `{ github_login, slack_user_id }`, with an optional time zone override (the default is the Slack profile time zone).
 - **pr_management:**
   - `enabled`
-  - `repos`: list of `owner/name`. Easy to add and remove, with per-repo `required_approvals` (default 1).
+  - `repos`: list of `owner/name`. Easy to add and remove.
   - `channel` (default `#prs`)
   - `triager` (GitHub login; initially Daniel)
   - `bot_authors` (default `["dependabot[bot]"]`)
   - stale thresholds per state, `urgent` threshold
-  - working hours
   - report time and time zone
   - draft nudge age (14d) and report age (30d)
-  - Dependabot age alert (7d)
   - reminder message templates by escalation level
 
 ## 7. Constraints
 
 - **Scale:** a small team (~5–15 people) and a handful of repos. Design for clarity, not throughput.
-- **Time zones:** the team spans ET, PT and China. All per-person timing uses the person's own time zone. Team-wide events (the report) use ET.
+- **Time zones:** the team spans ET, PT and China. Weekend exclusion uses the owner's time zone. Team-wide events (the report) use ET.
 - **Latency:** Slack interactions are acknowledged within 3s; heavy work happens after the ack.
 - **Rollout:** the existing Slack Workflow Builder "Request PR" workflow is retired once Nathan's form is live. No migration of old posts is needed.
 
 ## 8. Out of Scope (V1)
 
 - Review load balancing / reviewer suggestions
+- Reminder snooze button (P2)
 - Any LLM-generated content
 - GitHub comments, labels, merges, closes and approvals
+- Requiring more than one approval
 - Non-GitHub integrations (Sentry, PostHog, marketing)
 - Expanding GitHub team review requests
 - Historical backfill of metrics before Nathan was installed (trends start from data GitHub can provide via API at runtime)
