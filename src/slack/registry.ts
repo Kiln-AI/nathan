@@ -117,7 +117,7 @@ export interface Registered<H> {
 }
 
 export const HELP_COMMAND = "help";
-const COMMAND_NAME = /^[a-z][a-z0-9-]*$/;
+const COMMAND_NAME = /^[a-z][a-z0-9_-]*$/;
 
 /** All features' Slack registrations. IDs are global, so a clash between features fails at startup. */
 export class SlackHandlers {
@@ -134,7 +134,8 @@ export class SlackHandlers {
         add(this.viewSubmissions, "view submission", callbackId, { featureId, handler }),
       action: (actionId, handler) => add(this.actions, "action", actionId, { featureId, handler }),
       command: (name, handler) => {
-        if (!COMMAND_NAME.test(name)) throw new Error(`Subcommand "${name}" must be lowercase letters, digits and -`);
+        if (!COMMAND_NAME.test(name))
+          throw new Error(`Subcommand "${name}" must be lowercase letters, digits, _ and -`);
         if (name === HELP_COMMAND) throw new Error(`Subcommand "${HELP_COMMAND}" is built in`);
         add(this.commands, "subcommand", name, { featureId, handler });
       },

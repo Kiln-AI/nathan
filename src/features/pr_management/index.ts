@@ -3,6 +3,7 @@ import { GITHUB_EVENTS } from "../../github";
 import { prConfigSchema } from "./config";
 import { createPeople } from "./people";
 import { registerPersonalQueue } from "./personal_queue";
+import { registerPRReport } from "./pr_report";
 import { type PRContext, refreshPullRequest } from "./refresh";
 import { postDailyReport, reportSchedule } from "./report";
 import { registerRequestPR } from "./request";
@@ -50,5 +51,6 @@ export const prManagement = defineFeature({
 
     registerRequestPR(registrar, ctx);
     registerPersonalQueue(registrar, ctx);
+    registerPRReport(registrar, ctx);
   },
 });

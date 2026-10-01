@@ -25,9 +25,9 @@ describe("SlackHandlers", () => {
     expect(() => register(handlers.forFeature("beta"))).toThrow(`Slack ${kind} "x" is already registered by alpha`);
   });
 
-  it.each(["Prs", "my_cmd", "-x", ""])("rejects the subcommand name %j", (name) => {
+  it.each(["Prs", "-x", ""])("rejects the subcommand name %j", (name) => {
     expect(() => new SlackHandlers().forFeature("alpha").command(name, { description: "d" })).toThrow(
-      "must be lowercase letters, digits and -",
+      "must be lowercase letters, digits, _ and -",
     );
   });
 

@@ -195,7 +195,7 @@ Before starting: steps 1–7 done for staging, `npm run verify:github -- staging
 
 - [ ] `/healthz` returns `{"env":"staging",…}`.
 - [ ] Slack's event URL is *Verified*, and GitHub's `ping` redelivery got a `202`.
-- [ ] The Home tab shows Nathan's sections; `/nathan-staging help` lists `prs`.
+- [ ] The Home tab shows Nathan's sections; `/nathan-staging help` lists `prs` and `pr_report`.
 
 **Request PR form**
 

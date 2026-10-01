@@ -107,11 +107,16 @@ export function buildReport(input: ReportInput): [ReportMessage, ...ReportMessag
   return [{ text, blocks: [...blocks.slice(0, firstRoom), context(CONTINUED_TEXT)] }, ...rest];
 }
 
+export interface GeneratedReport {
+  messages: [ReportMessage, ...ReportMessage[]];
+  openCount: number;
+}
+
 /**
- * The `daily_report` task. Runs the sweep first so the report reflects GitHub now; if the sweep
- * fails, it is reported and the report goes out from the stored records.
+ * Sweeps, gathers inputs and builds the report. Does not post or record the report, so callers
+ * control where it goes and whether it counts as a scheduled report.
  */
-export async function postDailyReport(ctx: PRContext, slot: DateTime): Promise<void> {
+export async function generateReport(ctx: PRContext, slot: DateTime): Promise<GeneratedReport> {
   const { config, services, store } = ctx;
   try {
     await sweep(ctx);
@@ -130,7 +135,7 @@ export async function postDailyReport(ctx: PRContext, slot: DateTime): Promise<v
     services.github.reader.recentPullRequests(config.repos, historySince),
   ]);
 
-  const [first, ...rest] = buildReport({
+  const messages = buildReport({
     slot,
     now,
     since,
@@ -144,8 +149,23 @@ export async function postDailyReport(ctx: PRContext, slot: DateTime): Promise<v
     triager: config.triager,
     oldDraftDays: config.drafts.reportAfterDays,
   });
+
+  return { messages, openCount: openPRs(records).length };
+}
+
+/**
+ * The `daily_report` task. Runs the sweep first so the report reflects GitHub now; if the sweep
+ * fails, it is reported and the report goes out from the stored records.
+ */
+export async function postDailyReport(ctx: PRContext, slot: DateTime): Promise<void> {
+  const {
+    messages: [first, ...rest],
+    openCount,
+  } = await generateReport(ctx, slot);
+  const { config, services, store } = ctx;
+  const now = services.clock.now();
   const posted = await services.slack.postMessage({ channel: config.channel, ...first });
-  await store.saveReport({ slot, openCount: openPRs(records).length }, now);
+  await store.saveReport({ slot, openCount }, now);
   for (const part of rest) {
     await services.slack.postMessage({ channel: posted.channel, thread_ts: posted.ts, ...part });
   }
