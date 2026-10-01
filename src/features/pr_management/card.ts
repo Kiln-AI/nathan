@@ -103,7 +103,8 @@ function statusLine(model: CardModel, people: People): string {
   return `${heading} · Next: ${info.nextStep} · ${ownerLabel}: ${owners}`;
 }
 
-function quote(text: string): string {
+/** Escaped and quoted line by line, as mrkdwn. */
+export function quote(text: string): string {
   return escapeText(text)
     .split("\n")
     .map((line) => `> ${line}`)

@@ -86,5 +86,7 @@ export interface SlackClient {
   publishHome(userId: string, view: HomeTabView): Promise<void>;
   /** The user's IANA time zone from their Slack profile, or null when it has none. */
   userTimeZone(userId: string): Promise<string | null>;
+  /** The user's display name (else real name, else username), or null when the profile has none. */
+  userName(userId: string): Promise<string | null>;
   authTest(): Promise<BotIdentity>;
 }

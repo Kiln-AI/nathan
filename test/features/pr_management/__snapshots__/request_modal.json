@@ -1,0 +1,133 @@
+{
+  "type": "modal",
+  "callback_id": "request_pr_form",
+  "title": {
+    "type": "plain_text",
+    "text": "Request PR review",
+    "emoji": true
+  },
+  "blocks": [
+    {
+      "type": "input",
+      "block_id": "pr_url",
+      "label": {
+        "type": "plain_text",
+        "text": "PR link",
+        "emoji": true
+      },
+      "element": {
+        "type": "url_text_input",
+        "action_id": "pr_url",
+        "placeholder": {
+          "type": "plain_text",
+          "text": "https://github.com/owner/repo/pull/123",
+          "emoji": true
+        }
+      }
+    },
+    {
+      "type": "input",
+      "block_id": "modifiers",
+      "label": {
+        "type": "plain_text",
+        "text": "Modifiers",
+        "emoji": true
+      },
+      "element": {
+        "type": "checkboxes",
+        "action_id": "modifiers",
+        "options": [
+          {
+            "value": "quick",
+            "text": {
+              "type": "plain_text",
+              "text": "quick",
+              "emoji": true
+            },
+            "description": {
+              "type": "plain_text",
+              "text": "Small; a few minutes to review",
+              "emoji": true
+            }
+          },
+          {
+            "value": "large",
+            "text": {
+              "type": "plain_text",
+              "text": "large",
+              "emoji": true
+            },
+            "description": {
+              "type": "plain_text",
+              "text": "Big; set aside some time",
+              "emoji": true
+            }
+          },
+          {
+            "value": "urgent",
+            "text": {
+              "type": "plain_text",
+              "text": "urgent",
+              "emoji": true
+            },
+            "description": {
+              "type": "plain_text",
+              "text": "Blocking something; reminders come sooner",
+              "emoji": true
+            }
+          }
+        ]
+      },
+      "optional": true
+    },
+    {
+      "type": "input",
+      "block_id": "reviewers",
+      "label": {
+        "type": "plain_text",
+        "text": "Reviewers",
+        "emoji": true
+      },
+      "element": {
+        "type": "multi_users_select",
+        "action_id": "reviewers",
+        "placeholder": {
+          "type": "plain_text",
+          "text": "Who should review it?",
+          "emoji": true
+        }
+      }
+    },
+    {
+      "type": "input",
+      "block_id": "note",
+      "label": {
+        "type": "plain_text",
+        "text": "Note",
+        "emoji": true
+      },
+      "element": {
+        "type": "plain_text_input",
+        "action_id": "note",
+        "multiline": true,
+        "placeholder": {
+          "type": "plain_text",
+          "text": "Anything reviewers should know?",
+          "emoji": true
+        },
+        "max_length": 2000
+      },
+      "optional": true
+    }
+  ],
+  "submit": {
+    "type": "plain_text",
+    "text": "Request review",
+    "emoji": true
+  },
+  "close": {
+    "type": "plain_text",
+    "text": "Cancel",
+    "emoji": true
+  }
+}

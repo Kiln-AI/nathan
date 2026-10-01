@@ -105,6 +105,22 @@ describe("createSlackApiClient", () => {
     expect(await withoutTz.client.userTimeZone("U2")).toBeNull();
   });
 
+  it("reads a user's display name, falling back to real name, then username, then null", async () => {
+    const cases: [Record<string, unknown>, string | null][] = [
+      [{ name: "alice", real_name: "Alice R", profile: { display_name: "Al", real_name: "Alice P" } }, "Al"],
+      [{ name: "alice", real_name: "Alice R", profile: { display_name: "", real_name: "Alice P" } }, "Alice P"],
+      [{ name: "alice", real_name: "Alice R", profile: {} }, "Alice R"],
+      [{ name: "alice" }, "alice"],
+      [{}, null],
+    ];
+    for (const [user, expected] of cases) {
+      vi.restoreAllMocks();
+      const { client, calls } = stubSlackApi({ "users.info": { ok: true, user: { id: "U1", ...user } } });
+      expect(await client.userName("U1")).toBe(expected);
+      expect(calls[0]?.params).toEqual({ user: "U1" });
+    }
+  });
+
   it("returns the bot identity from auth.test", async () => {
     const { client } = stubSlackApi({ "auth.test": { ok: true, bot_id: "B1", user_id: "U9" } });
     expect(await client.authTest()).toEqual({ botId: "B1", botUserId: "U9" });

@@ -44,6 +44,7 @@ export function createDryRunSlackClient(inner: SlackClient, { testChannel, nameO
     updateView: (update) => inner.updateView(update),
     publishHome: (userId, view) => inner.publishHome(userId, view),
     userTimeZone: (userId) => inner.userTimeZone(userId),
+    userName: (userId) => inner.userName(userId),
     authTest: () => inner.authTest(),
   };
 }

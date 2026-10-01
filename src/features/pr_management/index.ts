@@ -3,6 +3,7 @@ import { GITHUB_EVENTS } from "../../github";
 import { prConfigSchema } from "./config";
 import { createPeople } from "./people";
 import { type PRContext, refreshPullRequest } from "./refresh";
+import { registerRequestPR } from "./request";
 import { createPRStore } from "./store";
 import { sweep } from "./sweep";
 import { commitKeySchema, createWebhookHandler, prKeySchema, resolveCommit, trackedRepos } from "./webhooks";
@@ -39,5 +40,7 @@ export const prManagement = defineFeature({
     for (const event of GITHUB_EVENTS) registrar.github.on(event, onWebhook);
 
     registrar.schedule({ name: "sweep", when: { everyHour: true }, run: () => sweep(ctx) });
+
+    registerRequestPR(registrar, ctx);
   },
 });

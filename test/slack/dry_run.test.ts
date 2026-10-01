@@ -104,6 +104,7 @@ describe("createDryRunSlackClient", () => {
   it("passes views, ephemeral replies and reads through unchanged", async () => {
     const { inner, client } = dryRun();
     inner.timeZones.set("UALICE", "Asia/Shanghai");
+    inner.names.set("UALICE", "Alice");
     const view = modal({ callbackId: "form", title: "Form", blocks: [] });
     const home = { type: "home" as const, blocks: [section("<@UALICE>")] };
 
@@ -117,6 +118,7 @@ describe("createDryRunSlackClient", () => {
     expect(inner.homes).toEqual([{ userId: "UALICE", view: home }]);
     expect(inner.responses).toEqual([{ responseUrl: "https://hooks.slack.test/r", reply: { text: "<@UALICE>" } }]);
     expect(await client.userTimeZone("UALICE")).toBe("Asia/Shanghai");
+    expect(await client.userName("UALICE")).toBe("Alice");
     expect(await client.authTest()).toEqual(await inner.authTest());
   });
 });

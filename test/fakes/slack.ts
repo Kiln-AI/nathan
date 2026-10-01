@@ -28,6 +28,8 @@ export class FakeSlack implements SlackClient {
   /** Slack profile time zones by user ID; users missing here have none. */
   readonly timeZones = new Map<string, string>();
   timeZoneLookups: string[] = [];
+  /** Slack display names by user ID; users missing here have none. */
+  readonly names = new Map<string, string>();
   authTests = 0;
   private nextTs = 1_000_000;
   private nextView = 0;
@@ -90,6 +92,11 @@ export class FakeSlack implements SlackClient {
     this.check();
     this.timeZoneLookups.push(userId);
     return this.timeZones.get(userId) ?? null;
+  }
+
+  async userName(userId: string): Promise<string | null> {
+    this.check();
+    return this.names.get(userId) ?? null;
   }
 
   async authTest(): Promise<BotIdentity> {

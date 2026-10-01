@@ -63,6 +63,11 @@ export function createSlackApiClient(botToken: string): SlackClient {
       return result.user?.tz || null;
     },
 
+    async userName(userId) {
+      const { user } = await api.users.info({ user: userId });
+      return user?.profile?.display_name || user?.profile?.real_name || user?.real_name || user?.name || null;
+    },
+
     async authTest() {
       const result = await api.auth.test();
       return {

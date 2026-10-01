@@ -27,7 +27,7 @@ status: complete
   - Webhook handlers feeding the debounced refresh.
   - The refresh pipeline: create, update and finalize the live card; handoff replies.
   - The hourly sweep, including finalizing PRs that are no longer open.
-- [ ] Phase 5: **Request PR flow.**
+- [x] Phase 5: **Request PR flow.**
   - Global shortcut and an App Home button opening the modal.
   - Validation inside the ack budget.
   - `request_review` job: request reviewers, refresh, post/update the card, re-request replies; DM the submitter if it gives up.

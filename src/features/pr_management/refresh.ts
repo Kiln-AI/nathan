@@ -14,6 +14,16 @@ export interface PRSnapshot {
   readAt: DateTime;
 }
 
+/** What a Request PR form submission adds to the PR's record (spec §4.3A). */
+export interface RequestFields {
+  /** Empty keeps the modifiers from an earlier request. */
+  modifiers: string[];
+  /** Null keeps the note from an earlier request. */
+  note: string | null;
+  /** Slack user ID of the submitter. */
+  submittedBy: string;
+}
+
 export interface PRContext {
   config: PRConfig;
   services: Services;
@@ -34,6 +44,8 @@ const FINAL_REACTION: Partial<Record<PRStatusState, string>> = {
 /**
  * Recomputes one PR from GitHub and brings Slack in line: store the status, then edit or create
  * the card and post any handoff. `snapshot` skips the GitHub read (the sweep already has the data).
+ * `request` comes from the Request PR form: its fields are stored, an open non-draft PR always
+ * gets a card, and the generic handoff is left to the request job's own reply.
  * Idempotent, so job retries are safe.
  */
 export async function refreshPullRequest(
@@ -41,6 +53,7 @@ export async function refreshPullRequest(
   repo: string,
   number: number,
   snapshot?: PRSnapshot,
+  request?: RequestFields,
 ): Promise<void> {
   const { store } = ctx;
   // When the GitHub data was read. Events after it aren't reflected in the data, so they're left
@@ -52,9 +65,15 @@ export async function refreshPullRequest(
     const before = await store.get(repo, number);
     // Compare-and-set orders writers, not data: a record from a later GitHub read is fresher, and
     // writing older data over it would undo it (e.g. un-merge a PR).
-    if (before && before.refreshedAt > readAt) return;
+    if (before && before.refreshedAt > readAt) {
+      if (!request) return;
+      // The form's fields still need storing: the job's retry reads GitHub again.
+      throw new Error(`A newer refresh of ${repo}#${number} overtook a review request; retrying`);
+    }
     const events = await store.events(repo, number, readAt);
-    const after = pr ? fromPullRequest(ctx, repo, pr, before, readAt) : before && vanished(ctx, before, readAt);
+    const after = pr
+      ? withRequest(fromPullRequest(ctx, repo, pr, before, readAt), request)
+      : before && vanished(ctx, before, readAt);
     if (!after) {
       await consume(store, repo, number, events);
       return;
@@ -63,7 +82,7 @@ export async function refreshPullRequest(
     if (!written) continue;
 
     try {
-      await applyEffects(ctx, before, after, pr, events);
+      await applyEffects(ctx, before, after, pr, events, request !== undefined);
     } catch (error) {
       // Put the old status back so the retry sees the same change and redoes the effects. This is
       // compare-and-set too: if another refresh wrote in between, the restore is a no-op and a
@@ -123,6 +142,18 @@ function fromPullRequest(
   };
 }
 
+function withRequest(record: PRRecord, request: RequestFields | undefined): PRRecord {
+  if (!request) return record;
+  // A re-request that leaves a field empty keeps the earlier request's value, so forgetting to
+  // tick `urgent` again doesn't quietly relax the reminders.
+  return {
+    ...record,
+    modifiers: request.modifiers.length > 0 ? request.modifiers : record.modifiers,
+    note: request.note ?? record.note,
+    submittedBy: request.submittedBy,
+  };
+}
+
 /**
  * GitHub no longer has the PR (deleted, or transferred to another repo): finalize it as closed.
  * Null when it is already final, so there is nothing to do.
@@ -139,6 +170,7 @@ async function applyEffects(
   after: PRRecord,
   pr: PRData | null,
   events: readonly PREvent[],
+  fromRequestForm: boolean,
 ): Promise<void> {
   const { services, store, people } = ctx;
   // The card shows the PR's age, so the hash (and the card) changes as time passes: each sweep
@@ -147,7 +179,7 @@ async function applyEffects(
   const hash = await hashCard(rendered);
   const card = before?.card;
   if (!before || !card) {
-    if (pr && wantsCard(pr)) await postCard(ctx, after, rendered, hash);
+    if (pr && wantsCard(pr, fromRequestForm)) await postCard(ctx, after, rendered, hash);
     return;
   }
 
@@ -160,14 +192,18 @@ async function applyEffects(
     if (!isFinal(before.state)) await services.slack.addReaction({ ...card, name: reaction });
     return;
   }
-  if (!pr) return;
+  if (!pr || fromRequestForm) return;
   const reply = describeHandoff({ before, after, pr, events, people });
   if (reply) await services.slack.postMessage({ channel: card.channel, thread_ts: card.ts, text: reply });
 }
 
-/** GitHub-originated request (spec §4.3B): reviewers are requested on an open, non-draft PR. */
-function wantsCard(pr: PRData): boolean {
-  return pr.state === "open" && !pr.isDraft && pr.pendingReviewers.length + pr.pendingTeams.length > 0;
+/**
+ * A form request (spec §4.3A) is for an open, non-draft PR; a GitHub-originated one (§4.3B) is
+ * reviewers requested on an open, non-draft PR.
+ */
+function wantsCard(pr: PRData, fromRequestForm: boolean): boolean {
+  if (pr.state !== "open" || pr.isDraft) return false;
+  return fromRequestForm || pr.pendingReviewers.length + pr.pendingTeams.length > 0;
 }
 
 async function postCard(ctx: PRContext, record: PRRecord, rendered: RenderedCard, hash: string): Promise<void> {

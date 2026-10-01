@@ -86,7 +86,10 @@ interface EventRow {
 
 const FINAL_STATES = "('merged', 'closed')";
 
-/** The columns a refresh writes: everything except the form fields and the card. */
+/**
+ * The columns a refresh writes: everything except the card. The Request PR form's fields are
+ * written here too, so they go through the same compare-and-set as the status.
+ */
 const REFRESHED_COLUMNS = [
   "title",
   "url",
@@ -101,6 +104,9 @@ const REFRESHED_COLUMNS = [
   "state",
   "owners",
   "state_since",
+  "modifiers",
+  "note",
+  "submitted_by",
   "refreshed_at",
 ] as const;
 
@@ -121,6 +127,9 @@ export function createPRStore(db: Db) {
     record.state,
     JSON.stringify(record.owners),
     record.stateSince.toMillis(),
+    JSON.stringify(record.modifiers),
+    record.note,
+    record.submittedBy,
     record.refreshedAt.toMillis(),
   ];
 
