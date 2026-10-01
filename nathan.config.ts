@@ -19,9 +19,9 @@ export default defineConfig({
   admin: { slackChannel: "C0C661VAF6D" },
 
   features: {
-    // PR/CR management. Disabled until the production cutover (docs/setup.md).
+    // PR/CR management (docs/setup.md).
     pr_management: {
-      enabled: false,
+      enabled: true,
       repos: ["Kiln-AI/Kiln", "Kiln-AI/kiln_server"],
       channel: "C0996APVD9R", // #prs
       triager: "chiang-daniel",
