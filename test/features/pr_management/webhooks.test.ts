@@ -54,6 +54,13 @@ describe("pr_management webhooks", () => {
     ]);
   });
 
+  it.each(["enqueued", "dequeued"])("refreshes a PR %s in the merge queue", async (action) => {
+    const h = prApp();
+    await deliver(h, "pull_request", { ...fixture(pullRequest), action });
+    expect(await h.events(101)).toMatchObject([{ event: "pull_request", action, actor: "alice" }]);
+    expect(h.queue.sent).toHaveLength(1);
+  });
+
   it("ignores untracked repos and actions that can't change the state", async () => {
     const h = prApp();
     await deliver(h, "pull_request", withRepo(fixture(pullRequest), "Someone/else"));

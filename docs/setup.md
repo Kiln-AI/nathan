@@ -122,7 +122,7 @@ For each environment:
      | Checks | Read | CI check runs |
      | Commit statuses | Read | CI from external services (commit statuses) |
 
-   - **Subscribe to events:** Pull request, Pull request review, Check run, Status.
+   - **Subscribe to events:** Pull request, Pull request review, Check run, Status. (Merge queues need nothing more: entering and leaving one are Pull request events, and the queue state is read with Pull requests read.)
    - **Where can this GitHub App be installed?** Only on this account.
 3. After creating it, note the **App ID** on the App's page. Under **Private keys**, click **Generate a private key**; a `.pem` file downloads.
 4. Convert the key to PKCS#8. GitHub hands out PKCS#1 (`-----BEGIN RSA PRIVATE KEY-----`), but Workers' Web Crypto only reads PKCS#8 (`-----BEGIN PRIVATE KEY-----`). Nathan refuses to start with a PKCS#1 key.

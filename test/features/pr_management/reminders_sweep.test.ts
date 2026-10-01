@@ -198,6 +198,14 @@ describe("stale reminders", () => {
     expect(h.slack.posts).toEqual([]);
   });
 
+  it("never reminds about a PR waiting in the merge queue", async () => {
+    const h = prApp();
+    await seenAt(h, "2026-10-05T14:00:00Z", { isInMergeQueue: true });
+    await sweepAt(h, "2026-10-08T14:00:00Z");
+    expect(h.slack.posts).toEqual([]);
+    expect(await h.record(101)).toMatchObject({ state: "in_merge_queue", card: null });
+  });
+
   it("tags the triager for an unmapped owner", async () => {
     const h = prApp();
     await seenAt(h, "2026-10-05T14:00:00Z", { pendingReviewers: ["stranger"] });

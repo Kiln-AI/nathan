@@ -1,7 +1,7 @@
 import { normalizeGithubLogin } from "../../core/directory";
 import type { PRData, Review, ReviewState } from "../../github";
 import type { People } from "./people";
-import { isFinal, type PRStatus, sameOwners } from "./status";
+import { isFinal, type PRStatus, type PRStatusState, STATE_INFO, sameOwners } from "./status";
 import type { PREvent } from "./store";
 
 // Handoff notifications (spec §4.5): when a PR's owners change, tag the new owners in the card
@@ -24,9 +24,10 @@ interface Happening {
 
 /** The thread reply to post, or null when nothing should be posted. */
 export function describeHandoff({ before, after, pr, events, people }: HandoffInput): string | null {
-  if (after.state === "draft" || isFinal(after.state) || sameOwners(before.owners, after.owners)) return null;
+  if (!getsHandoffs(after.state) || sameOwners(before.owners, after.owners)) return null;
   const newOwners = after.owners.filter((owner) => !before.owners.some((previous) => sameLogin(previous, owner)));
-  const { actor, sentence } = describe(after.state, pr, events, newOwners);
+  const { actor, sentence } =
+    before.state === "in_merge_queue" ? dequeued(after.state, events) : describe(after.state, pr, events, newOwners);
   const actorTag = actor ? people.label(actor) : null;
   const tags = people
     .tags(newOwners.filter((owner) => !actor || !sameLogin(owner, actor)))
@@ -34,7 +35,7 @@ export function describeHandoff({ before, after, pr, events, people }: HandoffIn
   return tags.length > 0 ? `${tags.join(" ")} — ${sentence}` : null;
 }
 
-function describe(state: PRStatus["state"], pr: PRData, events: readonly PREvent[], newOwners: string[]): Happening {
+function describe(state: PRStatusState, pr: PRData, events: readonly PREvent[], newOwners: string[]): Happening {
   switch (state) {
     case "approved":
       return byReviewer(pr, ["approved"], "approved ✅. Ready to merge.");
@@ -65,6 +66,22 @@ function describe(state: PRStatus["state"], pr: PRData, events: readonly PREvent
         sentence: "No reviewers are requested 🙋. Request a reviewer.",
       };
   }
+}
+
+/** Drafts aren't handed off (spec §4.5); merged, closed and queued PRs have nobody to hand off to. */
+function getsHandoffs(state: PRStatusState): boolean {
+  return state !== "draft" && state !== "in_merge_queue" && !isFinal(state);
+}
+
+/**
+ * Taken out of the merge queue without merging (its merge group failed CI, or someone removed it).
+ * The review that led here is old news, so say what happened instead.
+ */
+function dequeued(state: PRStatusState, events: readonly PREvent[]): Happening {
+  return {
+    actor: latest(events, "dequeued")?.actor ?? null,
+    sentence: `Removed from the merge queue 🚂. Next: ${STATE_INFO[state].nextStep}.`,
+  };
 }
 
 function byReviewer(pr: PRData, states: readonly ReviewState[], what: string): Happening {

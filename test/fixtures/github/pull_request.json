@@ -8,6 +8,7 @@
         "url": "https://github.com/Kiln-AI/Kiln/pull/99",
         "state": "MERGED",
         "isDraft": false,
+        "isInMergeQueue": false,
         "createdAt": "2026-10-01T09:00:00Z",
         "updatedAt": "2026-10-02T09:00:00Z",
         "mergedAt": "2026-10-03T12:00:00Z",

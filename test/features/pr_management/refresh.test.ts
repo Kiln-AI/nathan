@@ -294,6 +294,25 @@ describe("refresh: keeping the card live", () => {
     expect(await h.record(101)).toMatchObject({ owners: [] });
   });
 
+  it("shows a PR in the merge queue with no owner and tags nobody, then finalizes it when merged", async () => {
+    const h = prApp();
+    const card = await withCard(h);
+    const approved = { reviews: [aReview({ author: "bob", state: "approved" })] };
+    h.github.upsert(aPR({ ...approved, isInMergeQueue: true }));
+    await h.refresh(101);
+
+    const statusLine = "🚂 *In merge queue* · Next: Wait for merge queue";
+    expect(blocksText(h.slack.updates[0]?.blocks)).toContain(`${statusLine}"`);
+    expect(h.slack.posts).toEqual([]);
+    expect(await h.record(101)).toMatchObject({ state: "in_merge_queue", owners: [] });
+
+    h.github.upsert(aPR({ ...approved, state: "merged" }));
+    await h.refresh(101);
+    expect(blocksText(h.slack.updates.at(-1)?.blocks)).toContain("🟣 *Merged*");
+    expect(h.slack.reactions).toEqual([{ ...card, name: "large_purple_circle" }]);
+    expect(h.slack.posts).toEqual([]);
+  });
+
   it("brings a reopened PR's card back to life", async () => {
     const h = prApp();
     await withCard(h);

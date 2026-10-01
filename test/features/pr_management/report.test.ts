@@ -231,6 +231,21 @@ describe("buildReport sections", () => {
     );
   });
 
+  it("names no owner for OSS and Dependabot PRs in the merge queue", () => {
+    const queued = { state: "in_merge_queue" as const, owners: [] };
+    const records = [
+      aRecord({ number: 1, category: "oss", author: "outsider", ...queued }),
+      aRecord({ number: 2, category: "dependabot", author: "dependabot[bot]", ...queued }),
+    ];
+    const shown = report({ records });
+    expect(shown).toContain(
+      "• <https://github.com/Kiln-AI/Kiln/pull/1|Kiln-AI/Kiln#1> Add the thing · 🚂 In merge queue · Next: Wait for merge queue · 2w 4d",
+    );
+    expect(shown).toContain(
+      "• <https://github.com/Kiln-AI/Kiln/pull/2|Kiln-AI/Kiln#2> Add the thing · 🚂 In merge queue · 2w 4d",
+    );
+  });
+
   it("lists drafts at least 30 days old, by how long they've been drafts", () => {
     const records = [
       aRecord({ number: 1, state: "draft", draftSince: daysAgo(29) }),

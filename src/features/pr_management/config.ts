@@ -7,7 +7,7 @@ import type { PRStatusState } from "./status";
 export const DEFAULT_WIP_TITLE_PATTERN = String.raw`^\s*[[(]?wip\b`;
 export const DEFAULT_BOT_AUTHORS = ["dependabot[bot]"];
 
-/** States whose owners get stale reminders: open and not a draft (spec §4.6). */
+/** States whose owners get stale reminders: open, not a draft, and not in a merge queue (spec §4.2, §4.6). */
 export const REMINDED_STATES = [
   "wip_title",
   "conflict",
@@ -18,6 +18,12 @@ export const REMINDED_STATES = [
   "needs_rerequest",
   "needs_reviewer",
 ] as const satisfies readonly PRStatusState[];
+
+export type RemindedState = (typeof REMINDED_STATES)[number];
+
+export function isReminded(state: PRStatusState): state is RemindedState {
+  return (REMINDED_STATES as readonly PRStatusState[]).includes(state);
+}
 
 /**
  * Reminder lines by escalation level: levels 1, 2, 3, then 4 and up (the last group repeats).

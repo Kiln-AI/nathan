@@ -11,7 +11,7 @@ import {
   section,
   sectionsFromLines,
 } from "../../slack";
-import { prListTitle } from "./card";
+import { ownersText, prListTitle } from "./card";
 import type { PRConfig } from "./config";
 import type { People } from "./people";
 import type { PRContext } from "./refresh";
@@ -121,9 +121,13 @@ function mineLines(mine: readonly PRRecord[], now: DateTime, people: People): st
     `*Your open PRs* (${mine.length})`,
     ...mine.map((record) => {
       const info = STATE_INFO[record.state];
-      const owners = record.owners.map((login) => people.label(login)).join(", ");
-      const ownerLabel = record.owners.length === 1 ? "Owner" : "Owners";
-      return `• ${prListTitle(record)} · ${info.emoji} ${info.label} · ${ownerLabel}: ${owners} · opened ${formatAge(hoursSince(record.createdAt, now))} ago`;
+      const owners = ownersText(record.owners.map((login) => people.label(login)));
+      return [
+        `• ${prListTitle(record)}`,
+        `${info.emoji} ${info.label}`,
+        ...(owners ? [owners] : []),
+        `opened ${formatAge(hoursSince(record.createdAt, now))} ago`,
+      ].join(" · ");
     }),
   ];
 }

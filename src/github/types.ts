@@ -44,6 +44,8 @@ export interface PRData {
   authorIsBot: boolean;
   state: PRState;
   isDraft: boolean;
+  /** Queued in a GitHub merge queue (spec §4.2 rule 3). */
+  isInMergeQueue: boolean;
   createdAt: DateTime;
   updatedAt: DateTime;
   mergedAt: DateTime | null;

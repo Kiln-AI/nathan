@@ -57,6 +57,7 @@ export interface RawPullRequest {
   url: string;
   state: string;
   isDraft: boolean;
+  isInMergeQueue: boolean;
   createdAt: string;
   updatedAt: string;
   mergedAt: string | null;
@@ -112,6 +113,7 @@ export function toPRData(repo: string, raw: RawPullRequest): PRData {
     authorIsBot: raw.author?.__typename === "Bot",
     state: toPRState(raw.state),
     isDraft: raw.isDraft,
+    isInMergeQueue: raw.isInMergeQueue,
     createdAt: time(raw.createdAt),
     updatedAt: time(raw.updatedAt),
     mergedAt: optionalTime(raw.mergedAt),

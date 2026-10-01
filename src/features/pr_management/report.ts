@@ -15,7 +15,7 @@ import {
   type MessageBlock,
   sectionsFromLines,
 } from "../../slack";
-import { prListTitle } from "./card";
+import { ownersText, prListTitle } from "./card";
 import type { ReportConfig } from "./config";
 import { mean, median, peopleStats, prKey, type TrendStats, trendStats } from "./metrics";
 import type { PRContext } from "./refresh";
@@ -229,14 +229,14 @@ function ossContributors(input: ReportInput, open: readonly PRRecord[]): string[
   if (oss.length === 0) return [];
   return [
     `*OSS contributors* (${oss.length}, triager ${escapeText(input.triager)})`,
-    ...oss.map((record) => prLine(record, input.now, [nextStep(record), ownersOf(record)])),
+    ...oss.map((record) => prLine(record, input.now, [nextStep(record), ...ownersOf(record)])),
   ];
 }
 
 function dependabot(input: ReportInput, open: readonly PRRecord[]): string[] {
   const bots = oldestFirst(open.filter((record) => record.category === "dependabot"));
   if (bots.length === 0) return [];
-  return [`*Dependabot* (${bots.length})`, ...bots.map((record) => prLine(record, input.now, [ownersOf(record)]))];
+  return [`*Dependabot* (${bots.length})`, ...bots.map((record) => prLine(record, input.now, ownersOf(record)))];
 }
 
 function oldDrafts(input: ReportInput): string[] {
@@ -305,8 +305,9 @@ function nextStep(record: PRRecord): string {
   return `Next: ${STATE_INFO[record.state].nextStep}`;
 }
 
-function ownersOf(record: PRRecord): string {
-  return `${record.owners.length === 1 ? "Owner" : "Owners"}: ${escapeText(record.owners.join(", "))}`;
+function ownersOf(record: PRRecord): string[] {
+  const owners = ownersText(record.owners.map((login) => escapeText(login)));
+  return owners ? [owners] : [];
 }
 
 function oldestFirst(records: readonly PRRecord[]): PRRecord[] {

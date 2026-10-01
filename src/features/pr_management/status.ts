@@ -7,6 +7,7 @@ import type { Check, Mergeable, PRData } from "../../github";
 export type PRStatusState =
   | "merged"
   | "closed"
+  | "in_merge_queue"
   | "draft"
   | "wip_title"
   | "conflict"
@@ -21,7 +22,7 @@ export type PRCategory = "team" | "dependabot" | "oss";
 
 export interface PRStatus {
   state: PRStatusState;
-  /** GitHub logins, sorted and unique. Empty for merged and closed PRs. */
+  /** GitHub logins, sorted and unique. Empty for merged and closed PRs, and in a merge queue. */
   owners: string[];
 }
 
@@ -32,9 +33,10 @@ export interface StateInfo {
   nextStep: string | null;
 }
 
-export const STATE_INFO: Record<PRStatusState, StateInfo> = {
+export const STATE_INFO = {
   merged: { emoji: "🟣", label: "Merged", nextStep: null },
   closed: { emoji: "⚫", label: "Closed", nextStep: null },
+  in_merge_queue: { emoji: "🚂", label: "In merge queue", nextStep: "Wait for merge queue" },
   draft: { emoji: "📝", label: "Draft", nextStep: "Finish & mark ready" },
   wip_title: { emoji: "🚧", label: "Work in progress", nextStep: 'Convert to draft, or drop "WIP" from the title' },
   conflict: { emoji: "⚠️", label: "Merge conflict", nextStep: "Resolve conflicts" },
@@ -44,7 +46,7 @@ export const STATE_INFO: Record<PRStatusState, StateInfo> = {
   approved: { emoji: "✅", label: "Approved", nextStep: "Merge" },
   needs_rerequest: { emoji: "💬", label: "Reviewed", nextStep: "Re-request review or merge" },
   needs_reviewer: { emoji: "🙋", label: "Needs a reviewer", nextStep: "Request a reviewer" },
-};
+} satisfies Record<PRStatusState, StateInfo>;
 
 export function isFinal(state: PRStatusState): boolean {
   return state === "merged" || state === "closed";
@@ -90,7 +92,7 @@ export interface StatusContext {
   lastKnownMergeable?: Mergeable;
 }
 
-/** Spec §4.2 rules in order; the first match wins. The merge queue rule arrives in phase 9. */
+/** Spec §4.2 rules in order; the first match wins. */
 export function computeStatus(pr: PRData, ctx: StatusContext): PRStatus {
   const authorSide = (state: PRStatusState): PRStatus => ({
     state,
@@ -104,6 +106,8 @@ export function computeStatus(pr: PRData, ctx: StatusContext): PRStatus {
 
   if (pr.state === "merged") return { state: "merged", owners: [] };
   if (pr.state === "closed") return { state: "closed", owners: [] };
+  // Nobody has anything to do while GitHub merges it, so nobody owns it or is reminded.
+  if (pr.isInMergeQueue) return { state: "in_merge_queue", owners: [] };
   if (pr.isDraft) return authorSide("draft");
   if (isWipTitle(pr.title, ctx.wipTitlePattern)) return authorSide("wip_title");
   if (effectiveMergeable(pr.mergeable, ctx.lastKnownMergeable) === "conflicting") return authorSide("conflict");

@@ -17,6 +17,7 @@ export function aPR(overrides: Partial<PRData> = {}): PRData {
     authorIsBot: false,
     state: "open",
     isDraft: false,
+    isInMergeQueue: false,
     createdAt: at("2026-10-01T15:00:00Z"),
     updatedAt: at("2026-10-01T15:00:00Z"),
     mergedAt: null,

@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { describe, expect, it } from "vitest";
-import { type CardModel, renderCard, reviewerLines } from "../../../src/features/pr_management/card";
+import { type CardModel, ownersText, renderCard, reviewerLines } from "../../../src/features/pr_management/card";
 import { aPR, aReview } from "../../builders/github";
 import { testPeople } from "../../helpers/pr";
 
@@ -52,6 +52,14 @@ describe("renderCard golden files", () => {
     });
   });
 
+  it("in the merge queue", async () => {
+    await golden("in_merge_queue", {
+      state: "in_merge_queue",
+      owners: [],
+      reviewers: [{ login: "bob", status: "approved" }],
+    });
+  });
+
   it("merged", async () => {
     await golden("merged", { state: "merged", owners: [], reviewers: [{ login: "bob", status: "approved" }] });
   });
@@ -71,6 +79,12 @@ describe("renderCard", () => {
     const card = JSON.stringify(render({ author: "stranger", owners: ["bob", "outsider"], reviewers: [] }));
     expect(card).toContain("by stranger");
     expect(card).toContain("Owners: <@UBOB>, outsider");
+  });
+
+  it("names no owner when nobody owns the PR", () => {
+    expect(ownersText(["<@UBOB>"])).toBe("Owner: <@UBOB>");
+    expect(ownersText(["<@UBOB>", "outsider"])).toBe("Owners: <@UBOB>, outsider");
+    expect(ownersText([])).toBeNull();
   });
 
   it("escapes the title and leaves out empty sections", () => {

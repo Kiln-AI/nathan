@@ -25,6 +25,7 @@ describe("computeStatus rules", () => {
   it.each<[string, Partial<PRData>, string, string[]]>([
     ["1 merged", { state: "merged" }, "merged", []],
     ["2 closed", { state: "closed" }, "closed", []],
+    ["3 merge queue", { isInMergeQueue: true }, "in_merge_queue", []],
     ["4 draft", { isDraft: true }, "draft", ["alice"]],
     ["5 WIP title", { title: "WIP: half done" }, "wip_title", ["alice"]],
     ["6 conflict", { mergeable: "conflicting" }, "conflict", ["alice"]],
@@ -46,6 +47,13 @@ describe("computeStatus rules", () => {
   it.each<[string, Partial<PRData>, Partial<PRData>, string]>([
     ["merged beats draft", { state: "merged" }, { isDraft: true }, "merged"],
     ["closed beats draft", { state: "closed" }, { isDraft: true }, "closed"],
+    ["merged beats merge queue", { state: "merged" }, { isInMergeQueue: true }, "merged"],
+    ["closed beats merge queue", { state: "closed" }, { isInMergeQueue: true }, "closed"],
+    ["merge queue beats draft", { isInMergeQueue: true }, { isDraft: true }, "in_merge_queue"],
+    ["merge queue beats WIP", { isInMergeQueue: true }, { title: "WIP: x" }, "in_merge_queue"],
+    ["merge queue beats conflict", { isInMergeQueue: true }, { mergeable: "conflicting" }, "in_merge_queue"],
+    ["merge queue beats CI", { isInMergeQueue: true }, { checks: [failing] }, "in_merge_queue"],
+    ["merge queue beats pending reviewer", { isInMergeQueue: true }, { pendingReviewers: ["bob"] }, "in_merge_queue"],
     ["draft beats WIP", { isDraft: true }, { title: "[WIP] x" }, "draft"],
     ["WIP beats conflict", { title: "[WIP] x" }, { mergeable: "conflicting" }, "wip_title"],
     ["conflict beats CI", { mergeable: "conflicting" }, { checks: [failing] }, "conflict"],
@@ -82,6 +90,13 @@ describe("computeStatus owners", () => {
   it.each<[PRCategory]>([["dependabot"], ["oss"]])("gives a %s PR's author-side steps to the triager", (category) => {
     expect(status({ author: "outsider" }, { category })).toEqual({ state: "needs_reviewer", owners: ["dan"] });
     expect(status({ author: "outsider", isDraft: true }, { category }).owners).toEqual(["dan"]);
+  });
+
+  it("gives a non-team PR in a merge queue no owner, not even the triager", () => {
+    expect(status({ author: "outsider", isInMergeQueue: true }, { category: "oss" })).toEqual({
+      state: "in_merge_queue",
+      owners: [],
+    });
   });
 
   it("keeps reviewer-owned steps with the reviewers on non-team PRs", () => {
@@ -204,5 +219,10 @@ describe("helpers", () => {
   it("final states have no next step", () => {
     expect(STATE_INFO.merged.nextStep).toBeNull();
     expect(STATE_INFO.closed.nextStep).toBeNull();
+  });
+
+  it("a PR in a merge queue isn't final, and waits for the queue", () => {
+    expect(isFinal("in_merge_queue")).toBe(false);
+    expect(STATE_INFO.in_merge_queue.nextStep).toBe("Wait for merge queue");
   });
 });

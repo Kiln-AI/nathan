@@ -24,6 +24,8 @@ const RELEVANT_ACTIONS: Partial<Record<GitHubWebhookEvent["name"], ReadonlySet<s
     "review_request_removed",
     "synchronize",
     "edited",
+    "enqueued",
+    "dequeued",
   ]),
   pull_request_review: new Set(["submitted", "dismissed", "edited"]),
 };

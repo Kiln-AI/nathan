@@ -88,6 +88,17 @@ describe("personalQueue", () => {
     expect(empty.text).toBe("0 waiting on you, 0 of yours open");
   });
 
+  it("shows your PR in the merge queue with no owner, and waiting on nobody", () => {
+    const queued = aRecord({ number: 8, author: "alice", state: "in_merge_queue", owners: [], createdAt: hoursAgo(3) });
+    const shown = lines(queueFor("alice", [queued]).blocks);
+    expect(shown).toEqual([
+      "*Waiting on you*",
+      NOTHING_WAITING_TEXT,
+      "*Your open PRs* (1)",
+      "• <https://github.com/Kiln-AI/Kiln/pull/8|Kiln-AI/Kiln#8> Add the thing · 🚂 In merge queue · opened 3h ago",
+    ]);
+  });
+
   it("tells an unmapped user how to get added", () => {
     expect(queueFor(null, records)).toEqual({ text: UNMAPPED_TEXT, blocks: [section(UNMAPPED_TEXT)] });
   });

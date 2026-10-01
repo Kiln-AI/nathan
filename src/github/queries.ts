@@ -26,7 +26,7 @@ function checkContexts(prNumberVar: string | null): string {
 
 function prFieldsFragment(prNumberVar: string | null): string {
   return `fragment PRFields on PullRequest {
-  id number title url state isDraft createdAt updatedAt mergedAt closedAt
+  id number title url state isDraft isInMergeQueue createdAt updatedAt mergedAt closedAt
   additions deletions baseRefName headRefOid mergeable
   author { ${ACTOR} }
   reviewRequests(first: 50) { nodes { requestedReviewer {

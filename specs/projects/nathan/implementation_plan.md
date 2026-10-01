@@ -43,4 +43,4 @@ status: complete
   - Complete `docs/setup.md`: Slack and GitHub apps per env, secrets, key conversion, D1/KV/queue creation, inviting Nathan to `#prs`.
   - A `scripts/verify-github.ts` live check: App token, `isRequired`, sweep `rateLimit.cost`.
   - Staging dry-run checklist and the production cutover/retire-old-workflow checklist.
-- [ ] Phase 9 (P3): **Merge queue support.** `in_merge_queue` state (no owner, no reminders), with tests.
+- [x] Phase 9 (P3): **Merge queue support.** `in_merge_queue` state (no owner, no reminders), with tests.

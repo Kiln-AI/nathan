@@ -15,6 +15,7 @@
             "url": "https://github.com/Kiln-AI/nathan/pull/7",
             "state": "OPEN",
             "isDraft": true,
+            "isInMergeQueue": false,
             "createdAt": "2026-10-01T09:00:00Z",
             "updatedAt": "2026-10-02T09:00:00Z",
             "mergedAt": null,

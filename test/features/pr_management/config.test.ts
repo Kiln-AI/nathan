@@ -74,6 +74,11 @@ describe("pr_management config", () => {
       "features.pr_management.reminders.thresholdHoursByState",
     ],
     [
+      "a threshold for the merge queue",
+      { reminders: { thresholdHoursByState: { in_merge_queue: 5 } } },
+      "features.pr_management.reminders.thresholdHoursByState",
+    ],
+    [
       "an empty template level",
       { reminders: { templates: [["Ping"], []] } },
       "features.pr_management.reminders.templates.1: needs at least one variant",

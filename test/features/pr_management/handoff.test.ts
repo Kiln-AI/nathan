@@ -185,3 +185,26 @@ describe("describeHandoff: unmapped owners", () => {
     ).toBeNull();
   });
 });
+
+describe("describeHandoff: merge queue", () => {
+  const queued: PRStatus = { state: "in_merge_queue", owners: [] };
+
+  it("tags nobody when the PR enters the queue", () => {
+    expect(handoff(authorOwns("approved"), queued, {}, [anEvent("enqueued", "alice")])).toBeNull();
+    expect(handoff(awaitingBob, queued)).toBeNull();
+  });
+
+  it("hands the PR back to the author when it leaves the queue unmerged, saying so", () => {
+    const pr = { reviews: [aReview({ author: "bob", state: "approved" })] };
+    expect(handoff(queued, authorOwns("approved"), pr, [anEvent("dequeued", "bob")])).toBe(
+      "<@UALICE> — Removed from the merge queue 🚂. Next: Merge.",
+    );
+    expect(handoff(queued, authorOwns("ci_failing"))).toBe(
+      "<@UALICE> — Removed from the merge queue 🚂. Next: Fix CI.",
+    );
+  });
+
+  it("doesn't tag the author for taking their own PR out of the queue", () => {
+    expect(handoff(queued, authorOwns("approved"), {}, [anEvent("dequeued", "alice")])).toBeNull();
+  });
+});

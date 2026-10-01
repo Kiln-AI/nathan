@@ -14,6 +14,7 @@
             "url": "https://github.com/Kiln-AI/Kiln/pull/103",
             "state": "OPEN",
             "isDraft": false,
+            "isInMergeQueue": true,
             "createdAt": "2026-10-01T09:00:00Z",
             "updatedAt": "2026-10-02T09:00:00Z",
             "mergedAt": null,

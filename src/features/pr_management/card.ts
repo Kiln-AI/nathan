@@ -98,9 +98,14 @@ function statusLine(model: CardModel, people: People): string {
   const info = STATE_INFO[model.state];
   const heading = `${info.emoji} *${info.label}*`;
   if (info.nextStep === null) return heading;
-  const ownerLabel = model.owners.length === 1 ? "Owner" : "Owners";
-  const owners = model.owners.map((login) => people.label(login)).join(", ");
-  return `${heading} · Next: ${info.nextStep} · ${ownerLabel}: ${owners}`;
+  const owners = ownersText(model.owners.map((login) => people.label(login)));
+  return [heading, `Next: ${info.nextStep}`, ...(owners ? [owners] : [])].join(" · ");
+}
+
+/** "Owner: a" or "Owners: a, b"; null when nobody owns the PR (it's in a merge queue). */
+export function ownersText(labels: readonly string[]): string | null {
+  if (labels.length === 0) return null;
+  return `${labels.length === 1 ? "Owner" : "Owners"}: ${labels.join(", ")}`;
 }
 
 /** Titles longer than this are shortened in lists (the card itself shows the whole title). */

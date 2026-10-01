@@ -74,6 +74,13 @@ describe("openPullRequests (the sweep)", () => {
     ]);
   });
 
+  it("reads whether each PR is in a merge queue", async () => {
+    const { gateway, graphqlCalls } = graphqlStub({ Sweep: [sweep1, sweep2], RequiredChecks: [requiredChecks] });
+    const { pullRequests } = await gateway.reader.openPullRequests(["Kiln-AI/Kiln", "Kiln-AI/nathan"]);
+    expect(graphqlCalls[0]?.query).toContain("isInMergeQueue");
+    expect(pullRequests.filter((pr) => pr.isInMergeQueue).map((pr) => pr.number)).toEqual([103]);
+  });
+
   it("asks isRequired by PR number variable, never by interpolating values into the query", async () => {
     const { gateway, graphqlCalls } = graphqlStub({ Sweep: [sweep1, sweep2], RequiredChecks: [requiredChecks] });
     await gateway.reader.openPullRequests(["Kiln-AI/Kiln", "Kiln-AI/nathan"]);

@@ -2,7 +2,7 @@ import type { DateTime } from "luxon";
 import { formatAge, weekendExcludedHours } from "../../core/time";
 import type { PRData } from "../../github";
 import { mention } from "../../slack";
-import type { ReminderConfig } from "./config";
+import { isReminded, type ReminderConfig } from "./config";
 import { ensureCard, type PRContext } from "./refresh";
 import { type PRStatusState, STATE_INFO } from "./status";
 import type { PRRecord, ReminderState, SentReminder } from "./store";
@@ -113,12 +113,12 @@ export function reminderText(input: {
 /**
  * Sends the PR's reminder if one is due: posts the card if it has none, records the reminders,
  * then replies in the card thread. A failed reply puts the old record back, so the next sweep
- * sends it. Drafts and merged or closed PRs never get reminders.
+ * sends it. Drafts, PRs in a merge queue, and merged or closed PRs never get reminders.
  */
 export async function remindIfDue(ctx: PRContext, record: PRRecord, pr: PRData, random: () => number): Promise<void> {
   const { config, services, store } = ctx;
+  if (!isReminded(record.state)) return;
   const nextStep = STATE_INFO[record.state].nextStep;
-  if (record.state === "draft" || nextStep === null) return;
 
   const now = services.clock.now();
   const threshold = thresholdHours(record.state, record.modifiers, config.reminders);
