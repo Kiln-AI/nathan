@@ -1,7 +1,7 @@
 # Nathan's Slack app (staging): a separate app, because each app has one request URL.
 # Same scopes, events and callback IDs as production (slack-manifest.production.yaml), so the
 # code needs no per-environment IDs; only the names and the slash command differ.
-# Replace REPLACE_WITH_WORKERS_SUBDOMAIN with your workers.dev subdomain; see docs/setup.md.
+# URLs use the scosman.workers.dev subdomain; see docs/setup.md.
 display_information:
   name: Nathan (staging)
   description: Staging copy of Nathan. Runs in dry run and posts only to the test channel.
@@ -21,7 +21,7 @@ features:
       description: Staging copy of Request PR review
   slash_commands:
     - command: /nathan-staging
-      url: https://nathan-staging.REPLACE_WITH_WORKERS_SUBDOMAIN.workers.dev/slack/events
+      url: https://nathan-staging.scosman.workers.dev/slack/events
       description: Staging copy of /nathan (try /nathan-staging help)
       usage_hint: help
       should_escape: false
@@ -35,12 +35,12 @@ oauth_config:
       - im:write
 settings:
   event_subscriptions:
-    request_url: https://nathan-staging.REPLACE_WITH_WORKERS_SUBDOMAIN.workers.dev/slack/events
+    request_url: https://nathan-staging.scosman.workers.dev/slack/events
     bot_events:
       - app_home_opened
   interactivity:
     is_enabled: true
-    request_url: https://nathan-staging.REPLACE_WITH_WORKERS_SUBDOMAIN.workers.dev/slack/events
+    request_url: https://nathan-staging.scosman.workers.dev/slack/events
   org_deploy_enabled: false
   socket_mode_enabled: false
   token_rotation_enabled: false
