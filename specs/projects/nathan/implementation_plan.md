@@ -22,7 +22,7 @@ status: complete
   - Webhook verify, delivery dedupe and PR-key extraction (including fork `head_sha`).
   - `PRData` normalization; the sweep, single-PR and recent-PR GraphQL queries; the two-phase `isRequired` check.
   - The writer: `requestReviewers` only.
-- [ ] Phase 4: **PR state and sync.**
+- [x] Phase 4: **PR state and sync.**
   - `computeStatus`, covering all §4.2 rules except the merge queue, and the `pr_prs`/`pr_events` schema.
   - Webhook handlers feeding the debounced refresh.
   - The refresh pipeline: create, update and finalize the live card; handoff replies.

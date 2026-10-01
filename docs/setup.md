@@ -126,3 +126,7 @@ Notes:
 ## Launch checklist *(phase 8)*
 
 TODO: staging dry-run checklist and the production cutover.
+
+Cutover notes so far:
+
+- **The first sweep backfills cards.** Within an hour of enabling `pr_management`, Nathan posts a card for every open, non-draft PR that has reviewers requested, including PRs already posted by the old Workflow Builder "Request PR" flow. Expect that burst in the PR channel (or enable the feature in a quiet moment), and retire the old workflow at the same time so new requests aren't posted twice.

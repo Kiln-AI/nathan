@@ -1,0 +1,37 @@
+{
+  "text": "Kiln-AI/Kiln#101 Add the thing: Closed",
+  "blocks": [
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*<https://github.com/Kiln-AI/Kiln/pull/101|Kiln-AI/Kiln#101>* Add the thing"
+      }
+    },
+    {
+      "type": "context",
+      "elements": [
+        {
+          "type": "mrkdwn",
+          "text": "by <@UALICE> · +120 −8 · opened 2d 4h ago"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "⚫ *Closed*"
+      }
+    },
+    {
+      "type": "context",
+      "elements": [
+        {
+          "type": "mrkdwn",
+          "text": "Requested by <@UALICE>"
+        }
+      ]
+    }
+  ]
+}

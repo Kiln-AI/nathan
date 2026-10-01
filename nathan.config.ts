@@ -13,7 +13,16 @@ export default defineConfig({
   // TODO(setup): replace the placeholder with the real admin channel ID.
   admin: { slackChannel: "C00000ADMIN" },
 
-  features: {},
+  features: {
+    // PR/CR management. Disabled until setup is done (docs/setup.md).
+    // TODO(setup): set the PR channel ID and the triager's GitHub login, then enable.
+    pr_management: {
+      enabled: false,
+      repos: ["Kiln-AI/Kiln", "Kiln-AI/nathan"],
+      channel: "C000000PRS0",
+      triager: "TODO-triager-github-login",
+    },
+  },
 
   // Deep-merged over the config above, selected by NATHAN_ENV (wrangler.jsonc).
   environments: {
