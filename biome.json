@@ -1,0 +1,136 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": ["**", "!**/node_modules", "!**/.wrangler", "!specs"]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 120
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "trailingCommas": "all",
+      "semicolons": "always"
+    }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "style": {
+        "useImportType": "error",
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "slack-edge": "Only src/slack/ may import slack-edge; use the SlackClient from src/slack/index.ts.",
+              "slack-cloudflare-workers": "Only src/slack/ may import slack-cloudflare-workers; use src/slack/index.ts."
+            },
+            "patterns": [
+              {
+                "group": ["@octokit/*"],
+                "message": "Only src/github/ may import @octokit; use src/github/index.ts."
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "Date": "Use the injected Clock (src/core/time.ts) and luxon instead of Date."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/slack/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@octokit/*"],
+                    "message": "Only src/github/ may import @octokit; use src/github/index.ts."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/github/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "slack-edge": "Only src/slack/ may import slack-edge; use the SlackClient from src/slack/index.ts.",
+                  "slack-cloudflare-workers": "Only src/slack/ may import slack-cloudflare-workers; use src/slack/index.ts."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/features/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "slack-edge": "Features use src/slack/index.ts, never slack-edge.",
+                  "slack-cloudflare-workers": "Features use src/slack/index.ts, never slack-cloudflare-workers."
+                },
+                "patterns": [
+                  {
+                    "group": ["@octokit/*"],
+                    "message": "Features use src/github/index.ts, never @octokit."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

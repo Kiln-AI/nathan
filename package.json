@@ -1,0 +1,36 @@
+{
+  "name": "nathan",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "test": "vitest run",
+    "lint": "biome ci .",
+    "format": "biome check --write .",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts",
+    "check:config": "tsx scripts/check-config.ts",
+    "check": "npm run lint && npm run typecheck && npm run check:config && npm run check:imports && npm run test",
+    "test:coverage": "vitest run --coverage",
+    "check:imports": "tsx scripts/check-imports.ts"
+  },
+  "dependencies": {
+    "luxon": "^3.7.2",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@cloudflare/workers-types": "^5.20261001.1",
+    "@types/luxon": "^3.7.6",
+    "@types/node": "^22.20.4",
+    "@vitest/coverage-istanbul": "^4.1.11",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.146.0"
+  }
+}

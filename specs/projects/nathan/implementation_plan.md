@@ -6,7 +6,7 @@ status: complete
 
 ## Phases
 
-- [ ] Phase 1: **Scaffold and platform core.**
+- [x] Phase 1: **Scaffold and platform core.**
   - Tooling: npm, TS strict, Biome with import rules, Vitest workers pool, `wrangler.jsonc` with staging and production envs, CI and deploy workflows.
   - `nathan.config.ts` with zod config, `check:config`, and env overlay.
   - Core services: Clock/time utils, logger, `reportError`, `db` helpers, core D1 migration.

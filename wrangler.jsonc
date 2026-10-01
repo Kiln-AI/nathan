@@ -1,0 +1,76 @@
+// Nathan's Worker. The top level is the local/test environment (`wrangler dev`, Vitest).
+// `staging` and `production` repeat every binding because Wrangler bindings are not inherited.
+// Resource IDs marked REPLACE_WITH_* are created per environment; see docs/setup.md.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nathan",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-15",
+  "minify": true,
+  "observability": { "enabled": true },
+  "triggers": { "crons": ["*/15 * * * *"] },
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
+
+  "vars": { "NATHAN_ENV": "development" },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nathan-dev",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [{ "binding": "NATHAN_KV", "id": "00000000000000000000000000000000" }],
+  "queues": {
+    "producers": [{ "binding": "JOBS", "queue": "nathan-jobs-dev" }],
+    "consumers": [
+      { "queue": "nathan-jobs-dev", "max_retries": 3, "dead_letter_queue": "nathan-jobs-dev-dlq" },
+      { "queue": "nathan-jobs-dev-dlq", "max_retries": 0 }
+    ]
+  },
+
+  "env": {
+    "staging": {
+      "name": "nathan-staging",
+      "vars": { "NATHAN_ENV": "staging" },
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "nathan-staging",
+          "database_id": "REPLACE_WITH_STAGING_D1_ID",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "kv_namespaces": [{ "binding": "NATHAN_KV", "id": "REPLACE_WITH_STAGING_KV_ID" }],
+      "queues": {
+        "producers": [{ "binding": "JOBS", "queue": "nathan-jobs-staging" }],
+        "consumers": [
+          { "queue": "nathan-jobs-staging", "max_retries": 3, "dead_letter_queue": "nathan-jobs-staging-dlq" },
+          { "queue": "nathan-jobs-staging-dlq", "max_retries": 0 }
+        ]
+      }
+    },
+    "production": {
+      "name": "nathan-production",
+      "vars": { "NATHAN_ENV": "production" },
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "nathan-production",
+          "database_id": "REPLACE_WITH_PRODUCTION_D1_ID",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "kv_namespaces": [{ "binding": "NATHAN_KV", "id": "REPLACE_WITH_PRODUCTION_KV_ID" }],
+      "queues": {
+        "producers": [{ "binding": "JOBS", "queue": "nathan-jobs-production" }],
+        "consumers": [
+          { "queue": "nathan-jobs-production", "max_retries": 3, "dead_letter_queue": "nathan-jobs-production-dlq" },
+          { "queue": "nathan-jobs-production-dlq", "max_retries": 0 }
+        ]
+      }
+    }
+  }
+}
