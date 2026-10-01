@@ -1,6 +1,7 @@
 import type { z } from "zod";
-import type { SlackClient } from "../slack";
+import type { SlackClient, SlackRegistry } from "../slack";
 import type { Db } from "./db";
+import type { UserDirectory } from "./directory";
 import type { ReportError } from "./errors";
 import type { Debounce, Enqueue, JobHandler, JobOptions, JobRef } from "./jobs";
 import type { Logger } from "./log";
@@ -30,6 +31,8 @@ export function defineFeature<C>(feature: Feature<C>): Feature<C> {
 export interface Registrar<C> {
   config: C;
   services: Services;
+  /** Shortcuts, modals, buttons, `/nathan` subcommands and App Home sections. */
+  slack: SlackRegistry;
   jobs: {
     /** Registered as "<featureId>.<name>". */
     define<P>(name: string, schema: z.ZodType<P>, handler: JobHandler<P>, options?: JobOptions<P>): JobRef<P>;
@@ -38,9 +41,11 @@ export interface Registrar<C> {
   schedule(task: ScheduledTask): void;
 }
 
-/** Shared services. The Slack and GitHub gateways and the user directory join in later phases. */
+/** Shared services. The GitHub gateway joins in phase 3. */
 export interface Services {
+  /** Outbound Slack API. In dry run, posts go to the test channel with mentions defused. */
   slack: SlackClient;
+  directory: UserDirectory;
   db: Db;
   clock: Clock;
   log: Logger;

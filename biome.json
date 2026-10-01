@@ -39,7 +39,8 @@
           "options": {
             "paths": {
               "slack-edge": "Only src/slack/ may import slack-edge; use the SlackClient from src/slack/index.ts.",
-              "slack-cloudflare-workers": "Only src/slack/ may import slack-cloudflare-workers; use src/slack/index.ts."
+              "slack-cloudflare-workers": "Only src/slack/ may import slack-cloudflare-workers; use src/slack/index.ts.",
+              "slack-web-api-client": "Only src/slack/ may import slack-web-api-client; use src/slack/index.ts."
             },
             "patterns": [
               {
@@ -100,7 +101,8 @@
               "options": {
                 "paths": {
                   "slack-edge": "Only src/slack/ may import slack-edge; use the SlackClient from src/slack/index.ts.",
-                  "slack-cloudflare-workers": "Only src/slack/ may import slack-cloudflare-workers; use src/slack/index.ts."
+                  "slack-cloudflare-workers": "Only src/slack/ may import slack-cloudflare-workers; use src/slack/index.ts.",
+                  "slack-web-api-client": "Only src/slack/ may import slack-web-api-client; use src/slack/index.ts."
                 }
               }
             }
@@ -118,7 +120,8 @@
               "options": {
                 "paths": {
                   "slack-edge": "Features use src/slack/index.ts, never slack-edge.",
-                  "slack-cloudflare-workers": "Features use src/slack/index.ts, never slack-cloudflare-workers."
+                  "slack-cloudflare-workers": "Features use src/slack/index.ts, never slack-cloudflare-workers.",
+                  "slack-web-api-client": "Features use src/slack/index.ts, never slack-web-api-client."
                 },
                 "patterns": [
                   {

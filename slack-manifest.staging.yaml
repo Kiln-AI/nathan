@@ -1,0 +1,46 @@
+# Nathan's Slack app (staging): a separate app, because each app has one request URL.
+# Same scopes, events and callback IDs as production (slack-manifest.production.yaml), so the
+# code needs no per-environment IDs; only the names and the slash command differ.
+# Replace REPLACE_WITH_WORKERS_SUBDOMAIN with your workers.dev subdomain; see docs/setup.md.
+display_information:
+  name: Nathan (staging)
+  description: Staging copy of Nathan. Runs in dry run and posts only to the test channel.
+  background_color: "#7a4b00"
+features:
+  app_home:
+    home_tab_enabled: true
+    messages_tab_enabled: true
+    messages_tab_read_only_enabled: true
+  bot_user:
+    display_name: nathan-staging
+    always_online: true
+  shortcuts:
+    - name: Request PR review (staging)
+      type: global
+      callback_id: request_pr
+      description: Staging copy of Request PR review
+  slash_commands:
+    - command: /nathan-staging
+      url: https://nathan-staging.REPLACE_WITH_WORKERS_SUBDOMAIN.workers.dev/slack/events
+      description: Staging copy of /nathan (try /nathan-staging help)
+      usage_hint: help
+      should_escape: false
+oauth_config:
+  scopes:
+    bot:
+      - commands
+      - chat:write
+      - users:read
+      - reactions:write
+      - im:write
+settings:
+  event_subscriptions:
+    request_url: https://nathan-staging.REPLACE_WITH_WORKERS_SUBDOMAIN.workers.dev/slack/events
+    bot_events:
+      - app_home_opened
+  interactivity:
+    is_enabled: true
+    request_url: https://nathan-staging.REPLACE_WITH_WORKERS_SUBDOMAIN.workers.dev/slack/events
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false

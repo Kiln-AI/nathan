@@ -1,25 +1,62 @@
-// Public surface of the Slack gateway. Phase 2 grows this into the full client and registry
-// over slack-edge; for now the platform core only needs to post messages (admin alerts).
+// Public surface of the Slack gateway: everything a feature may use. Features import only this
+// file; the slack-edge adapter (gateway, client, dry run) is wired by src/core/app.ts.
 
-export interface SlackMessage {
-  channel: string;
-  text: string;
-  blocks?: unknown[];
-  thread_ts?: string;
-}
-
-export interface PostedMessage {
-  channel: string;
-  ts: string;
-}
-
-export interface SlackClient {
-  postMessage(message: SlackMessage): Promise<PostedMessage>;
-}
-
-/** Production placeholder until the Slack gateway exists; `reportError` logs its failure. */
-export const unwiredSlackClient: SlackClient = {
-  postMessage: async () => {
-    throw new Error("Slack gateway not wired yet");
-  },
-};
+export {
+  actions,
+  button,
+  channelLink,
+  checkboxes,
+  context,
+  divider,
+  escapeText,
+  header,
+  homeView,
+  input,
+  link,
+  MAX_MESSAGE_BLOCKS,
+  MAX_SECTION_TEXT,
+  MAX_VIEW_BLOCKS,
+  mention,
+  modal,
+  mrkdwn,
+  multiUsersSelect,
+  plainText,
+  section,
+  textInput,
+  truncate,
+  urlInput,
+} from "./blocks";
+export type {
+  ActionHandler,
+  ActionRequest,
+  CommandHandler,
+  CommandReply,
+  CommandRequest,
+  HomeRequest,
+  HomeSection,
+  ShortcutHandler,
+  ShortcutRequest,
+  SlackRegistry,
+  ViewSubmissionAck,
+  ViewSubmissionHandler,
+  ViewSubmissionRequest,
+} from "./registry";
+export type {
+  BotIdentity,
+  DirectMessage,
+  EphemeralReply,
+  HomeBlock,
+  HomeTabView,
+  MessageBlock,
+  MessageUpdate,
+  ModalBlock,
+  ModalView,
+  OpenedView,
+  PostedMessage,
+  Reaction,
+  SlackClient,
+  SlackMessage,
+  ViewStateValue,
+  ViewUpdate,
+  ViewValues,
+} from "./types";

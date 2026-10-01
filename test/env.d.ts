@@ -12,4 +12,6 @@ declare global {
 
 interface TestEnv extends Env {
   TEST_MIGRATIONS: D1Migration[];
+  SLACK_SIGNING_SECRET: string;
+  SLACK_BOT_TOKEN: string;
 }

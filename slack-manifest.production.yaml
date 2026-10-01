@@ -1,0 +1,45 @@
+# Nathan's Slack app (production). Create it at https://api.slack.com/apps → "From a manifest";
+# see docs/setup.md. Replace REPLACE_WITH_WORKERS_SUBDOMAIN with your workers.dev subdomain
+# (or a custom domain). Events, interactivity and the slash command all use /slack/events.
+display_information:
+  name: Nathan
+  description: Keeps PRs moving. Deterministic team automation, no AI.
+  background_color: "#2c2d30"
+features:
+  app_home:
+    home_tab_enabled: true
+    messages_tab_enabled: true
+    messages_tab_read_only_enabled: true
+  bot_user:
+    display_name: nathan
+    always_online: true
+  shortcuts:
+    - name: Request PR review
+      type: global
+      callback_id: request_pr
+      description: Ask teammates to review a GitHub PR
+  slash_commands:
+    - command: /nathan
+      url: https://nathan-production.REPLACE_WITH_WORKERS_SUBDOMAIN.workers.dev/slack/events
+      description: Nathan's commands (try /nathan help)
+      usage_hint: help
+      should_escape: false
+oauth_config:
+  scopes:
+    bot:
+      - commands
+      - chat:write
+      - users:read
+      - reactions:write
+      - im:write
+settings:
+  event_subscriptions:
+    request_url: https://nathan-production.REPLACE_WITH_WORKERS_SUBDOMAIN.workers.dev/slack/events
+    bot_events:
+      - app_home_opened
+  interactivity:
+    is_enabled: true
+    request_url: https://nathan-production.REPLACE_WITH_WORKERS_SUBDOMAIN.workers.dev/slack/events
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false

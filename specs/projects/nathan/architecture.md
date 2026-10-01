@@ -14,7 +14,7 @@ Research backing the stack choices: [research/platform-stack/summary.md](researc
 |---|---|---|
 | Runtime | Cloudflare Workers (Paid plan, already owned), **no `nodejs_compat`** | Near-zero cold start fits Slack's 3s ack. Cron, Queues, D1 and KV are built in. |
 | Language | TypeScript, `strict: true` | Stable on Workers (Python Workers are too new) |
-| Slack framework | `slack-edge` (via `slack-cloudflare-workers`), **only imported inside `src/slack/`** | The only maintained Workers-native Slack framework. It has ack plus lazy handlers, and Bolt JS doesn't run on Workers without shims. Its bus factor is small, so it sits behind an adapter. |
+| Slack framework | `slack-edge`, used directly (`slack-cloudflare-workers` only adds multi-workspace OAuth stores, which a single-workspace app doesn't need), **only imported inside `src/slack/`** | The only maintained Workers-native Slack framework. It has ack plus lazy handlers, and Bolt JS doesn't run on Workers without shims. Its bus factor is small, so it sits behind an adapter. |
 | GitHub | `@octokit/core`, `@octokit/auth-app`, `@octokit/webhooks-methods`, **only imported inside `src/github/`** | Verified in workerd. The private key must be PKCS#8 (§8). |
 | Relational state | **D1** (SQLite) | Small relational state (PR records, cards, debounce, job runs). Plain SQL with migrations. |
 | Token cache | **KV** | Caches the GitHub installation token (1h TTL) across isolates, which keeps the modal-validation path fast. |
@@ -273,7 +273,7 @@ There are two sources of truth:
 ## 9. Environments and Deployment
 
 - **Wrangler environments:** `staging` and `production`. Each has its own D1 database, KV namespace, queue plus DLQ, `NATHAN_ENV` var and secrets.
-- **Each environment also has its own Slack app and GitHub App,** because each app has one request URL. Staging's Slack app uses `/nathan-staging` and its own shortcut callback IDs. Its GitHub App is installed on the same repos, and dry run means it never writes.
+- **Each environment also has its own Slack app and GitHub App,** because each app has one request URL. Staging's Slack app uses `/nathan-staging` and its own app and shortcut names; its callback IDs match production's, so the code needs no per-environment IDs. Its GitHub App is installed on the same repos, and dry run means it never writes.
 - **GitHub Actions:**
   - `ci.yml` on every PR runs `npm ci`, `npm run check` (`biome ci`, `tsc --noEmit`, `check:config`, `vitest run`).
   - `deploy.yml` runs on push to `main`: apply remote D1 migrations to production, then `wrangler deploy --env production`.

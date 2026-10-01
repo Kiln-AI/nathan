@@ -138,6 +138,38 @@ describe("createApp", () => {
   it("loads the repo's nathan.config.ts by default", () => {
     expect(createApp(env).config.env).toBe("development");
   });
+
+  it.each(["SLACK_SIGNING_SECRET", "SLACK_BOT_TOKEN"])("fails to start without the %s secret", (name) => {
+    expect(() => createApp({ ...env, [name]: "" }, { config: aConfig(), features: [] })).toThrow(
+      `Missing secret ${name}`,
+    );
+  });
+
+  it("gives features the Slack registry and the user directory", async () => {
+    let seen: { github: string | undefined; registry: boolean } | undefined;
+    const feature = defineFeature({
+      id: "alpha",
+      configSchema: z.object({}),
+      register: (r) => {
+        seen = {
+          github: r.services.directory.bySlack("UALICE")?.github,
+          registry: typeof r.slack.shortcut === "function",
+        };
+      },
+    });
+    testApp({ features: [feature], config: aConfig({ features: { alpha: { enabled: true } } }) });
+    expect(seen).toEqual({ github: "alice", registry: true });
+  });
+
+  it("reroutes feature posts and admin alerts to the test channel in dry run", async () => {
+    const h = testApp({ config: aConfig({ dryRun: true, testChannel: "CTEST" }) });
+    await h.app.services.slack.postMessage({ channel: "CPRS", text: "<@UALICE> please review" });
+    await h.app.services.reportError(new Error("boom"), { source: "test" });
+    expect(h.slack.posts.map((p) => [p.channel, p.text])).toEqual([
+      ["CTEST", "[dry-run → <#CPRS>] @alice please review"],
+      ["CTEST", "[dry-run → <#CADMIN>] :rotating_light: [development] `test` failed: boom"],
+    ]);
+  });
 });
 
 describe("getApp", () => {

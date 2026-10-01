@@ -12,7 +12,7 @@ status: complete
   - Core services: Clock/time utils, logger, `reportError`, `db` helpers, core D1 migration.
   - HTTP router with `/healthz`, feature model and registrar, queue jobs with retry/give-up/DLQ and debounce, the tz-aware scheduler.
   - Test fakes and fixture builders, and a `docs/setup.md` skeleton.
-- [ ] Phase 2: **Slack gateway.**
+- [x] Phase 2: **Slack gateway.**
   - `SlackClient` and `SlackRegistry` over slack-edge, with cached authorize and ack/lazy rules.
   - `/nathan` subcommand router and `help`.
   - App Home composition and the directory's tz lookup and cache.

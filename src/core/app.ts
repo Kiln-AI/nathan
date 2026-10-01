@@ -1,10 +1,15 @@
 import { DateTime } from "luxon";
 import rawConfig from "../../nathan.config";
 import { features as registeredFeatures } from "../features";
-import { type SlackClient, unwiredSlackClient } from "../slack";
+import type { SlackClient } from "../slack";
+import { createSlackApiClient } from "../slack/client";
+import { createDryRunSlackClient } from "../slack/dry_run";
+import { createSlackGateway } from "../slack/gateway";
+import { SlackHandlers } from "../slack/registry";
 import { type LoadedConfig, loadConfig } from "./config";
 import { createDb, type Db } from "./db";
-import type { Env } from "./env";
+import { createUserDirectory, type UserDirectory } from "./directory";
+import { type Env, requireSecret } from "./env";
 import { createErrorReporter } from "./errors";
 import type { AnyFeature, Registrar, Services } from "./feature";
 import { Router } from "./http";
@@ -33,6 +38,7 @@ export interface AppOverrides {
   config?: unknown;
   features?: readonly AnyFeature[];
   clock?: Clock;
+  /** Replaces the Slack Web API client (dry-run wrapping still applies). */
   slack?: SlackClient;
   queue?: JobQueue;
   log?: Logger;
@@ -55,7 +61,18 @@ export function createApp(env: Env, overrides: AppOverrides = {}): App {
   const log = overrides.log ?? createConsoleLogger({ env: config.env });
   const clock = overrides.clock ?? systemClock;
   const db = createDb(env.DB);
-  const slack = overrides.slack ?? unwiredSlackClient;
+  const signingSecret = requireSecret(env, "SLACK_SIGNING_SECRET");
+  const botToken = requireSecret(env, "SLACK_BOT_TOKEN");
+  const slackApi = overrides.slack ?? createSlackApiClient(botToken);
+  const directory = createUserDirectory({
+    users: config.platform.users,
+    defaultTimezone: config.platform.defaults.timezone,
+    db,
+    clock,
+    slack: slackApi,
+    log,
+  });
+  const slack = withDryRun(slackApi, config, directory);
   const reportError = createErrorReporter({
     log,
     db,
@@ -73,15 +90,15 @@ export function createApp(env: Env, overrides: AppOverrides = {}): App {
     createDebouncedHandler({ db, clock, registry: jobs, enqueue }),
   );
   const debounce = createDebounce({ db, clock, enqueue, debouncedJob });
-  const services: Services = { slack, db, clock, log, reportError, enqueue, debounce };
+  const services: Services = { slack, directory, db, clock, log, reportError, enqueue, debounce };
 
   const scheduler = new Scheduler({ db, reportError });
-  const router = new Router();
-  router.on("GET", "/healthz", () => Response.json({ env: config.env, version: env.CF_VERSION_METADATA?.id ?? "dev" }));
+  const slackHandlers = new SlackHandlers();
 
   const registrarFor = <C>(featureId: string, featureConfig: C): Registrar<C> => ({
     config: featureConfig,
     services: { ...services, log: log.child({ feature: featureId }) },
+    slack: slackHandlers.forFeature(featureId),
     jobs: {
       define: (name, schema, handler, options) => jobs.define(`${featureId}.${name}`, schema, handler, options),
     },
@@ -92,6 +109,18 @@ export function createApp(env: Env, overrides: AppOverrides = {}): App {
   for (const feature of features) {
     if (config.features.has(feature.id)) feature.register(registrarFor(feature.id, config.features.get(feature.id)));
   }
+
+  const slackGateway = createSlackGateway({
+    signingSecret,
+    botToken,
+    handlers: slackHandlers,
+    slack,
+    reportError,
+    log,
+  });
+  const router = new Router();
+  router.on("GET", "/healthz", () => Response.json({ env: config.env, version: env.CF_VERSION_METADATA?.id ?? "dev" }));
+  router.on("POST", "/slack/events", (request, ctx) => slackGateway.handle(request, ctx));
 
   return {
     config,
@@ -130,6 +159,13 @@ function registerCoreTasks(registrar: Registrar<null>, db: Db): void {
       ]);
     },
   });
+}
+
+/** Dry run reroutes every post to the test channel, naming people by GitHub login instead of pinging them. */
+function withDryRun(slack: SlackClient, config: LoadedConfig, directory: UserDirectory): SlackClient {
+  const { dryRun, testChannel } = config.platform;
+  if (!dryRun || !testChannel) return slack;
+  return createDryRunSlackClient(slack, { testChannel, nameOf: (slackId) => directory.bySlack(slackId)?.github });
 }
 
 function isDeadLetterQueue(queueName: string): boolean {
