@@ -4,18 +4,7 @@ import { errorMessage } from "../../core/errors";
 import type { Registrar } from "../../core/feature";
 import type { JobRef } from "../../core/jobs";
 import { GitHubApiError, type PRData } from "../../github";
-import {
-  actions,
-  button,
-  channelLink,
-  context,
-  escapeText,
-  type HomeBlock,
-  link,
-  mention,
-  section,
-  truncate,
-} from "../../slack";
+import { actions, button, channelLink, escapeText, type HomeBlock, link, mention, truncate } from "../../slack";
 import { quote } from "./card";
 import type { PRConfig } from "./config";
 import { type PRContext, refreshPullRequest } from "./refresh";
@@ -44,7 +33,6 @@ import { trackedRepos } from "./webhooks";
 const REJECTED_STATUSES = new Set([403, 404, 422]);
 const MAX_ERROR_IN_DM = 300;
 
-export const HOME_TEXT = "*Need a review?* Request one and I'll post it to the PR channel and keep it moving.";
 /** Re-renders the App Home, keeping the feature's state (the queue's tab). */
 export const REFRESH_HOME_ACTION = "pr_home_refresh";
 
@@ -72,7 +60,8 @@ export function registerRequestPR(registrar: Registrar<PRConfig>, ctx: PRContext
   registrar.slack.action(OPEN_REQUEST_PR_ACTION, { ack: openForm });
   registrar.slack.homeSection({
     order: 0,
-    render: async ({ state }) => requestHomeSection(services.clock.now(), state),
+    render: async ({ userId, state }) =>
+      requestHomeSection(services.clock.now().setZone(await services.directory.timezone(userId)), state),
   });
   registrar.slack.homeButton(REFRESH_HOME_ACTION);
 
@@ -102,18 +91,18 @@ export function registerRequestPR(registrar: Registrar<PRConfig>, ctx: PRContext
 }
 
 /**
- * The Request PR prompt with a Refresh button beside it. Refresh carries the feature's current state
- * (the queue's tab, which shares it), so it re-renders without changing tabs. The "Updated" time is
- * a Slack date token, shown in each viewer's own time zone.
+ * One row: Refresh labelled with when the view was rendered (`now`, in the
+ * viewer's zone; a button label can't hold a Slack date token), then Request PR rightmost (actions
+ * rows are always left-aligned, so this is as far right as it goes). Refresh carries the feature's
+ * current state (the queue's tab, which shares it), so it re-renders without changing tabs.
  */
 export function requestHomeSection(now: DateTime, state?: string): HomeBlock[] {
-  const refresh = button({ text: "↻ Refresh", actionId: REFRESH_HOME_ACTION, ...(state ? { value: state } : {}) });
-  const seconds = Math.floor(now.toSeconds());
-  return [
-    section(HOME_TEXT),
-    actions([button({ text: "Request PR", actionId: OPEN_REQUEST_PR_ACTION, style: "primary" }), refresh]),
-    context(`<!date^${seconds}^Updated {date_short_pretty} at {time}|Updated ${now.toUTC().toFormat("HH:mm 'UTC'")}>`),
-  ];
+  const refresh = button({
+    text: `↻ Refresh · ${now.setLocale("en-US").toFormat("h:mm a")}`,
+    actionId: REFRESH_HOME_ACTION,
+    ...(state ? { value: state } : {}),
+  });
+  return [actions([refresh, button({ text: "Request PR", actionId: OPEN_REQUEST_PR_ACTION, style: "primary" })])];
 }
 
 /** GitHub accepted the reviewers, but handing over to the Slack step failed. */

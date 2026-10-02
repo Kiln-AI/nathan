@@ -19,7 +19,7 @@ import {
   renderQueueMessage,
   UNMAPPED_TEXT,
 } from "../../../src/features/pr_management/personal_queue";
-import { HOME_TEXT, REFRESH_HOME_ACTION } from "../../../src/features/pr_management/request";
+import { REFRESH_HOME_ACTION } from "../../../src/features/pr_management/request";
 import type { PRRecord } from "../../../src/features/pr_management/store";
 import { type HomeBlock, type MessageBlock, section } from "../../../src/slack";
 import { aPR } from "../../builders/github";
@@ -335,7 +335,7 @@ describe("App Home and /nathan prs", () => {
     await send(h, appHomeOpenedBody("UALICE"), "application/json");
 
     const shown = lines(h.slack.homes.at(-1)?.view.blocks ?? []);
-    expect(shown[0]).toBe(HOME_TEXT);
+    expect(shown[0]).toBe("[↻ Refresh · 10:00 AM] [Request PR]");
     expect(shown).toContain("# 📥 1 Waiting on You");
     expect(shown).toContain("# 🚀 1 Open PRs");
     expect(shown).toContain("[✓ All] [⏰ Overdue · 0] [📥 Waiting on You · 1] [🚀 Your Open PRs · 1]");
@@ -353,7 +353,7 @@ describe("App Home and /nathan prs", () => {
     const view = h.slack.homes.at(-1)?.view;
     expect(view?.private_metadata).toBe('{"pr_management":"mine"}');
     const shown = lines(view?.blocks ?? []);
-    expect(shown[0]).toBe(HOME_TEXT);
+    expect(shown[0]).toBe("[↻ Refresh · 10:00 AM] [Request PR]");
     expect(shown).toContain("[All] [⏰ Overdue · 0] [📥 Waiting on You · 1] [✓ 🚀 Your Open PRs · 1]");
     expect(shown).toContain("# 🚀 Your Open PRs");
     expect(shown).not.toContain("# 📥 Waiting on You");
@@ -382,7 +382,7 @@ describe("App Home and /nathan prs", () => {
     const view = h.slack.homes.at(-1)?.view;
     expect(view?.private_metadata).toBe('{"pr_management":"mine"}');
     const shown = lines(view?.blocks ?? []);
-    expect(shown[1]).toBe("[Request PR] [↻ Refresh]");
+    expect(shown[0]).toBe("[↻ Refresh · 10:00 AM] [Request PR]");
     expect(shown).toContain("[All] [⏰ Overdue · 0] [📥 Waiting on You · 1] [✓ 🚀 Your Open PRs · 1]");
     const refreshButton = view?.blocks
       .flatMap((b) => (b.type === "actions" ? b.elements : []))
