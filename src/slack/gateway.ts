@@ -11,7 +11,7 @@ import type { ReportError } from "../core/errors";
 import { runIsolated } from "../core/errors";
 import type { Logger } from "../core/log";
 import { helpText, parseCommandText, unknownCommandText } from "./commands";
-import { composeHome } from "./home";
+import { composeHome, type HomeStates, parseHomeStates } from "./home";
 import {
   type ActionRequest,
   type CommandReply,
@@ -150,6 +150,33 @@ export function createSlackGateway({
     );
   }
 
+  async function publishHome(userId: string, states: HomeStates) {
+    const view = await composeHome(
+      handlers.homeSections,
+      userId,
+      (featureId, error) => reportError(error, { source: `${featureId}.home`, userId }),
+      states,
+    );
+    await slack.publishHome(userId, view);
+  }
+
+  // A home button only re-renders the App Home, after the ack, with its value as its section's state.
+  for (const [actionId, { featureId }] of handlers.homeButtons) {
+    app.action(
+      actionId,
+      async () => undefined,
+      async (req) => {
+        const request = toActionRequest(blockActionPayload(req), actionId);
+        const states = { ...parseHomeStates(request.view?.privateMetadata), [featureId]: request.value ?? "" };
+        await runIsolated(
+          `${featureId}.home_button:${actionId}`,
+          () => publishHome(request.userId, states),
+          reportError,
+        );
+      },
+    );
+  }
+
   // Every button sends block_actions, including link buttons nobody handles ("Open PR"). slack-edge
   // uses the first matching listener, so this catch-all only sees unregistered actions; without it
   // slack-edge would answer 404 (a warning icon in Slack) and console.log the whole payload.
@@ -202,16 +229,7 @@ export function createSlackGateway({
 
   app.event("app_home_opened", async ({ payload }) => {
     if (payload.tab !== "home") return;
-    await runIsolated(
-      "slack.app_home",
-      async () => {
-        const view = await composeHome(handlers.homeSections, payload.user, (featureId, error) =>
-          reportError(error, { source: `${featureId}.home`, userId: payload.user }),
-        );
-        await slack.publishHome(payload.user, view);
-      },
-      reportError,
-    );
+    await runIsolated("slack.app_home", () => publishHome(payload.user, {}), reportError);
   });
 
   return { handle: (request, ctx) => app.run(request, ctx) };

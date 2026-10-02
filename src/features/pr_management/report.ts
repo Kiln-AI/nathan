@@ -1,7 +1,7 @@
 import { DateTime } from "luxon";
 import { normalizeGithubLogin } from "../../core/directory";
 import { latestFireAtOrBefore, type Schedule } from "../../core/scheduler";
-import { formatAge, weekendExcludedHours } from "../../core/time";
+import { formatAge } from "../../core/time";
 import type { PRHistory } from "../../github";
 import {
   actions,
@@ -19,7 +19,7 @@ import { ownersText, prListTitle } from "./card";
 import type { ReportConfig } from "./config";
 import { mean, median, peopleStats, prKey, type TrendStats, trendStats } from "./metrics";
 import type { PRContext } from "./refresh";
-import { thresholdHours } from "./reminders";
+import { overdueOwners } from "./reminders";
 import { OPEN_REQUEST_PR_ACTION } from "./request_form";
 import { STATE_INFO } from "./status";
 import type { PRRecord } from "./store";
@@ -143,7 +143,7 @@ export async function generateReport(ctx: PRContext, slot: DateTime): Promise<Ge
     weekly,
     previousOpenCount: last?.openCount ?? null,
     records,
-    overdue: await overdueOwners(ctx, records, now),
+    overdue: await overdueOwners(ctx, openPRs(records), now),
     history,
     team: services.directory.users().map((user) => user.github),
     triager: config.triager,
@@ -169,26 +169,6 @@ export async function postDailyReport(ctx: PRContext, slot: DateTime): Promise<v
   for (const part of rest) {
     await services.slack.postMessage({ channel: posted.channel, thread_ts: posted.ts, ...part });
   }
-}
-
-/**
- * Each open PR's owners who are past its reminder threshold, counting working hours in the state in
- * the time zone of whoever is told about them (the report's zone when nobody can be).
- */
-async function overdueOwners(ctx: PRContext, records: readonly PRRecord[], now: DateTime) {
-  const { config, people, services } = ctx;
-  const overdue = new Map<string, string[]>();
-  for (const record of openPRs(records)) {
-    const threshold = thresholdHours(record.state, record.modifiers, config.reminders);
-    const owners: string[] = [];
-    for (const login of record.owners) {
-      const recipient = people.recipient(login);
-      const tz = recipient ? await services.directory.timezone(recipient) : config.report.timezone;
-      if (weekendExcludedHours(record.stateSince, now, tz) >= threshold) owners.push(login);
-    }
-    if (owners.length > 0) overdue.set(prKey(record), owners);
-  }
-  return overdue;
 }
 
 function openPRs(records: readonly PRRecord[]): PRRecord[] {

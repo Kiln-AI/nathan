@@ -1,106 +1,304 @@
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { DateTime } from "luxon";
 import { describe, expect, it } from "vitest";
+import { prKey } from "../../../src/features/pr_management/metrics";
 import {
+  buildQueue,
   fitMessage,
+  MAX_GROUP_ROWS,
   NO_OPEN_PRS_TEXT,
+  NOTHING_OVERDUE_TEXT,
   NOTHING_WAITING_TEXT,
-  personalQueue,
+  parseTab,
+  QUEUE_TABS,
   QUEUE_TRUNCATED_TEXT,
+  type QueueTab,
+  queueTabAction,
+  relevantRecords,
+  renderHome,
+  renderQueueMessage,
   UNMAPPED_TEXT,
 } from "../../../src/features/pr_management/personal_queue";
 import { HOME_TEXT } from "../../../src/features/pr_management/request";
-import { type MessageBlock, section } from "../../../src/slack";
+import type { PRRecord } from "../../../src/features/pr_management/store";
+import { type HomeBlock, type MessageBlock, section } from "../../../src/slack";
 import { aPR } from "../../builders/github";
 import { aRecord } from "../../builders/pr_record";
-import { type PRTestApp, prApp, REPO, testPeople } from "../../helpers/pr";
-import { appHomeOpenedBody, commandBody, signedSlackRequest } from "../../helpers/slack";
+import { type PRTestApp, prApp, testPeople } from "../../helpers/pr";
+import { appHomeOpenedBody, blockActionBody, commandBody, signedSlackRequest } from "../../helpers/slack";
 
 const at = (iso: string) => DateTime.fromISO(iso, { zone: "utc" });
 const NOW = at("2026-10-05T14:00:00Z");
 const people = testPeople();
 const hoursAgo = (hours: number) => NOW.minus({ hours });
+const SERVER = "Kiln-AI/kiln_server";
 
-/** The queue's mrkdwn lines. */
-function lines(blocks: readonly MessageBlock[]): string[] {
-  return blocks.flatMap((block) => (block.type === "section" && block.text ? block.text.text.split("\n") : []));
+/** Each block as one line of text: headers and context as is, list rows prefixed "• ", buttons in [brackets]. */
+function lines(blocks: readonly (MessageBlock | HomeBlock)[]): string[] {
+  return blocks.flatMap((block): string[] => {
+    if (block.type === "header") return [`# ${block.text.text}`];
+    if (block.type === "context") return block.elements.map((e) => ("text" in e ? e.text : ""));
+    if (block.type === "section") return [block.text?.text ?? ""];
+    if (block.type === "divider") return ["---"];
+    if (block.type === "actions")
+      return [block.elements.map((e) => ("text" in e && e.text ? `[${e.text.text}]` : "")).join(" ")];
+    if (block.type === "rich_text") {
+      return block.elements.flatMap((list) =>
+        list.type === "rich_text_list"
+          ? list.elements.map(
+              (item) =>
+                `• ${item.elements
+                  .map((e) => {
+                    if (e.type === "text") return e.style?.bold ? `*${e.text}*` : e.text;
+                    if (e.type === "link") return `<${e.text}>`;
+                    if (e.type === "user") return `@${e.user_id}`;
+                    return "";
+                  })
+                  .join("")}`,
+            )
+          : [],
+      );
+    }
+    return [];
+  });
 }
 
-const queueFor = (login: string | null, records = [] as ReturnType<typeof aRecord>[]) =>
-  personalQueue({ login, records, now: NOW, people });
+/** Owners past the threshold, keyed like `overdueOwners`. */
+const overdueMap = (entries: [PRRecord, string[]][]) =>
+  new Map(entries.map(([record, owners]) => [prKey(record), owners]));
 
-describe("personalQueue", () => {
-  const records = [
-    aRecord({
-      number: 1,
-      author: "bob",
-      state: "awaiting_review",
-      owners: ["alice", "carol"],
-      stateSince: hoursAgo(5),
-    }),
-    aRecord({ number: 2, author: "carol", state: "approved", owners: ["carol"], stateSince: hoursAgo(50) }),
-    aRecord({ number: 3, author: "bob", state: "awaiting_review", owners: ["ALICE"], stateSince: hoursAgo(30) }),
-    aRecord({ number: 4, author: "alice", state: "ci_failing", owners: ["alice"], stateSince: hoursAgo(2) }),
-    aRecord({ number: 5, author: "alice", state: "draft", owners: ["alice"], createdAt: hoursAgo(400) }),
-    aRecord({ number: 6, author: "alice", state: "merged", owners: [] }),
-    aRecord({ number: 7, author: "Alice", state: "awaiting_review", owners: ["bob"], createdAt: hoursAgo(10) }),
-  ];
+// alice's view: two reviews (one overdue), her own CI failure, a draft, a PR overdue on bob, and noise.
+const review3 = aRecord({
+  number: 3,
+  author: "bob",
+  state: "awaiting_review",
+  owners: ["ALICE"],
+  stateSince: hoursAgo(54),
+});
+const review1 = aRecord({
+  number: 1,
+  repo: SERVER,
+  author: "stranger",
+  state: "awaiting_review",
+  owners: ["alice", "carol"],
+  stateSince: hoursAgo(5),
+});
+const ciFailing = aRecord({
+  number: 4,
+  author: "alice",
+  state: "ci_failing",
+  owners: ["alice"],
+  stateSince: hoursAgo(2),
+});
+const draft = aRecord({ number: 5, author: "alice", state: "draft", owners: ["alice"], stateSince: hoursAgo(400) });
+const onBob = aRecord({
+  number: 7,
+  author: "Alice",
+  state: "awaiting_review",
+  owners: ["bob"],
+  stateSince: hoursAgo(30),
+});
+const notMine = aRecord({ number: 2, author: "carol", state: "approved", owners: ["carol"], stateSince: hoursAgo(50) });
+const merged = aRecord({ number: 6, author: "alice", state: "merged", owners: [] });
+const RECORDS = [review3, review1, ciFailing, draft, onBob, notMine, merged];
+const OVERDUE = overdueMap([
+  [review3, ["ALICE"]],
+  [onBob, ["bob"]],
+  [notMine, ["carol"]],
+]);
 
+const queueFor = (login: string, records: PRRecord[] = RECORDS, overdue = OVERDUE) =>
+  buildQueue({ login, records, overdue, now: NOW });
+const home = (tab: QueueTab, login = "alice", records = RECORDS, overdue = OVERDUE) =>
+  lines(renderHome(queueFor(login, records, overdue), tab, people, login, NOW));
+
+describe("buildQueue", () => {
+  it("groups what's waiting on you by next step, longest waiting first, leaving out drafts", () => {
+    const { waiting } = queueFor("alice");
+    expect(waiting.map((g) => [g.title, g.items.map((i) => [i.record.number, i.overdue])])).toEqual([
+      [
+        "Review",
+        [
+          [3, true],
+          [1, false],
+        ],
+      ],
+      ["Fix CI", [[4, false]]],
+    ]);
+  });
+
+  it("groups your open PRs by state, most action needed first, flagging ones overdue on others", () => {
+    const { mine } = queueFor("alice");
+    expect(mine.map((g) => [g.title, g.items.map((i) => [i.record.number, i.overdue])])).toEqual([
+      ["❌ CI failing", [[4, false]]],
+      ["👀 Awaiting review", [[7, true]]],
+      ["📝 Draft", [[5, false]]],
+    ]);
+  });
+
+  it("counts each overdue PR once: yours to act on, or yours waiting on someone else", () => {
+    expect(queueFor("alice").stats).toEqual({
+      waiting: {
+        total: 3,
+        byState: [
+          { state: "awaiting_review", count: 2 },
+          { state: "ci_failing", count: 1 },
+        ],
+      },
+      mine: {
+        total: 3,
+        byState: [
+          { state: "ci_failing", count: 1 },
+          { state: "awaiting_review", count: 1 },
+          { state: "draft", count: 1 },
+        ],
+      },
+      overdue: { total: 2, waitingOnYou: 1, yoursOnOthers: 1, oldestHours: 54 },
+    });
+  });
+
+  it("doesn't count your own overdue step as overdue on others", () => {
+    const conflict = aRecord({
+      number: 9,
+      author: "alice",
+      state: "conflict",
+      owners: ["alice"],
+      stateSince: hoursAgo(80),
+    });
+    const { stats } = queueFor("alice", [conflict], overdueMap([[conflict, ["alice"]]]));
+    expect(stats.overdue).toEqual({ total: 1, waitingOnYou: 1, yoursOnOthers: 0, oldestHours: 80 });
+  });
+
+  it("keeps only the records a user owns or wrote", () => {
+    expect(relevantRecords("alice", RECORDS).map((r) => r.number)).toEqual([3, 1, 4, 5, 7]);
+  });
+});
+
+describe("renderHome", () => {
   it("golden file", async () => {
-    await expect(`${JSON.stringify(queueFor("alice", records), null, 2)}\n`).toMatchFileSnapshot(
-      "__snapshots__/personal_queue.json",
-    );
+    const blocks = renderHome(queueFor("alice"), "all", people, "alice", NOW);
+    await expect(`${JSON.stringify(blocks, null, 2)}\n`).toMatchFileSnapshot("__snapshots__/personal_queue.json");
   });
 
-  it("groups what's waiting on you by next step, longest-waiting first, leaving out drafts", () => {
-    const shown = lines(queueFor("alice", records).blocks);
-    expect(shown.slice(0, 6)).toEqual([
-      "*Waiting on you* (3)",
-      "*Review*",
-      "• <https://github.com/Kiln-AI/Kiln/pull/3|Kiln-AI/Kiln#3> Add the thing · by bob · waiting 1d 6h",
-      "• <https://github.com/Kiln-AI/Kiln/pull/1|Kiln-AI/Kiln#1> Add the thing · by bob · waiting 5h",
-      "*Fix CI*",
-      "• <https://github.com/Kiln-AI/Kiln/pull/4|Kiln-AI/Kiln#4> Add the thing · by alice · waiting 2h",
+  it("leads with big-number stats, Overdue first", () => {
+    expect(home("all").slice(0, 7)).toEqual([
+      "# ⏰ 2 Overdue",
+      "1 waiting on you · 1 of your PRs, waiting on others · oldest 2d 6h",
+      "# 📥 3 Waiting on You",
+      "2 reviews requested · 1 CI failing",
+      "# 🚀 3 Open PRs",
+      "❌ 1 CI failing · 👀 1 awaiting review · 📝 1 draft",
+      "---",
     ]);
   });
 
-  it("lists your open PRs oldest first, with state and owners, leaving out merged and closed ones", () => {
-    const shown = lines(queueFor("alice", records).blocks);
-    expect(shown.slice(shown.indexOf("*Your open PRs* (3)") + 1)).toEqual([
-      "• <https://github.com/Kiln-AI/Kiln/pull/5|Kiln-AI/Kiln#5> Add the thing · 📝 Draft · Owner: <@UALICE> · opened 2w 2d ago",
-      "• <https://github.com/Kiln-AI/Kiln/pull/4|Kiln-AI/Kiln#4> Add the thing · ❌ CI failing · Owner: <@UALICE> · opened 3d 23h ago",
-      "• <https://github.com/Kiln-AI/Kiln/pull/7|Kiln-AI/Kiln#7> Add the thing · 👀 Awaiting review · Owner: <@UBOB> · opened 10h ago",
-    ]);
-  });
-
-  it("names several owners, and says so when nothing is waiting or open", () => {
-    const shown = lines(queueFor("bob", records).blocks);
-    expect(shown).toContain(
-      "• <https://github.com/Kiln-AI/Kiln/pull/1|Kiln-AI/Kiln#1> Add the thing · 👀 Awaiting review · Owners: <@UALICE>, <@UCAROL> · opened 3d 23h ago",
-    );
-    const empty = queueFor("dan", records);
-    expect(lines(empty.blocks)).toEqual([
-      "*Waiting on you*",
+  it("says so when nothing is overdue, waiting or open", () => {
+    expect(home("all", "dan").slice(0, 6)).toEqual([
+      "# ⏰ 0 Overdue",
+      NOTHING_OVERDUE_TEXT,
+      "# 📥 0 Waiting on You",
       NOTHING_WAITING_TEXT,
-      "*Your open PRs*",
+      "# 🚀 0 Open PRs",
       NO_OPEN_PRS_TEXT,
     ]);
-    expect(empty.text).toBe("0 waiting on you, 0 of yours open");
   });
 
-  it("shows your PR in the merge queue with no owner, and waiting on nobody", () => {
-    const queued = aRecord({ number: 8, author: "alice", state: "in_merge_queue", owners: [], createdAt: hoursAgo(3) });
-    const shown = lines(queueFor("alice", [queued]).blocks);
-    expect(shown).toEqual([
-      "*Waiting on you*",
-      NOTHING_WAITING_TEXT,
-      "*Your open PRs* (1)",
-      "• <https://github.com/Kiln-AI/Kiln/pull/8|Kiln-AI/Kiln#8> Add the thing · 🚂 In merge queue · opened 3h ago",
+  it("shows tabs as secondary buttons with counts, ticking the current one", () => {
+    const [tabs] = renderHome(queueFor("alice"), "overdue", people, "alice", NOW).filter((b) => b.type === "actions");
+    expect(lines(tabs ? [tabs] : [])).toEqual([
+      "[All] [✓ ⏰ Overdue · 2] [📥 Waiting on You · 3] [🚀 Your Open PRs · 3]",
+    ]);
+    const buttons = tabs?.type === "actions" ? tabs.elements : [];
+    expect(buttons.map((b) => ("action_id" in b ? b.action_id : ""))).toEqual(QUEUE_TABS.map(queueTabAction));
+    expect(buttons.map((b) => ("value" in b ? b.value : ""))).toEqual([...QUEUE_TABS]);
+    expect(buttons.some((b) => "style" in b && b.style)).toBe(false);
+  });
+
+  it("lists both sections on All, with repo-named links, authors, waits and overdue flags", () => {
+    const shown = home("all");
+    expect(shown.slice(shown.indexOf("# 📥 Waiting on You"))).toEqual([
+      "# 📥 Waiting on You",
+      "3 PRs by next step, longest waiting first.",
+      "Review · 2 · 1 overdue",
+      "• <Kiln - #3> Add the thing · @UBOB · *⏰ 2d 6h*",
+      "• <kiln_server - #1> Add the thing · stranger · 5h",
+      "Fix CI · 1",
+      "• <Kiln - #4> Add the thing · 2h",
+      "---",
+      "# 🚀 Your Open PRs",
+      "3 open, most action needed first.",
+      "❌ CI failing · 1",
+      "• <Kiln - #4> Add the thing · 2h",
+      "👀 Awaiting review · 1 · 1 overdue",
+      "• <Kiln - #7> Add the thing · waiting on @UBOB · *⏰ 1d 6h*",
+      "📝 Draft · 1",
+      "• <Kiln - #5> Add the thing · 2w 2d",
     ]);
   });
 
-  it("tells an unmapped user how to get added", () => {
-    expect(queueFor(null, records)).toEqual({ text: UNMAPPED_TEXT, blocks: [section(UNMAPPED_TEXT)] });
+  it("filters both sections to overdue PRs on the Overdue tab", () => {
+    const shown = home("overdue");
+    expect(shown.slice(shown.indexOf("# 📥 Waiting on You"))).toEqual([
+      "# 📥 Waiting on You",
+      "1 overdue, by next step, longest waiting first.",
+      "Review · 1",
+      "• <Kiln - #3> Add the thing · @UBOB · *⏰ 2d 6h*",
+      "---",
+      "# 🚀 Your Open PRs",
+      "1 overdue on someone else.",
+      "👀 Awaiting review · 1",
+      "• <Kiln - #7> Add the thing · waiting on @UBOB · *⏰ 1d 6h*",
+    ]);
+    const none = home("overdue", "dan");
+    expect(none.slice(none.indexOf("# 📥 Waiting on You"))).toEqual([
+      "# 📥 Waiting on You",
+      NOTHING_OVERDUE_TEXT,
+      "---",
+      "# 🚀 Your Open PRs",
+      NOTHING_OVERDUE_TEXT,
+    ]);
+  });
+
+  it("shows one section on its own tab", () => {
+    const waiting = home("waiting");
+    expect(waiting.filter((l) => l.startsWith("# ") && !/\d/.test(l))).toEqual(["# 📥 Waiting on You"]);
+    const mine = home("mine");
+    expect(mine.filter((l) => l.startsWith("# ") && !/\d/.test(l))).toEqual(["# 🚀 Your Open PRs"]);
+  });
+
+  it("names every other owner your PR waits on", () => {
+    const two = aRecord({ number: 8, author: "alice", state: "awaiting_review", owners: ["bob", "outsider"] });
+    expect(home("mine", "alice", [two], new Map())).toContain(
+      "• <Kiln - #8> Add the thing · waiting on @UBOB, outsider · 3d 23h",
+    );
+  });
+
+  it(`shows at most ${MAX_GROUP_ROWS} rows per group and counts the rest`, () => {
+    const many = Array.from({ length: MAX_GROUP_ROWS + 2 }, (_, i) =>
+      aRecord({ number: i + 1, author: "bob", state: "awaiting_review", owners: ["alice"], stateSince: hoursAgo(1) }),
+    );
+    const rows = home("waiting", "alice", many, new Map()).filter((l) => l.startsWith("• "));
+    expect(rows).toHaveLength(MAX_GROUP_ROWS + 1);
+    expect(rows.at(-1)).toBe("• …and 2 more");
+  });
+});
+
+describe("renderQueueMessage", () => {
+  it("is the All tab without tabs, with a one-line summary", () => {
+    const message = renderQueueMessage(queueFor("alice"), people, "alice", NOW);
+    expect(message.text).toBe("3 waiting on you, 2 overdue, 3 of yours open");
+    expect(message.blocks.some((b) => b.type === "actions")).toBe(false);
+    // The App Home's stats, divider, tabs, divider, lists; the message drops the tabs and one divider.
+    const shown = home("all");
+    expect(lines(message.blocks)).toEqual([...shown.slice(0, 7), ...shown.slice(9)]);
+  });
+});
+
+describe("parseTab", () => {
+  it("reads a known tab and falls back to All", () => {
+    expect(parseTab("overdue")).toBe("overdue");
+    expect(parseTab(undefined)).toBe("all");
+    expect(parseTab("nonsense")).toBe("all");
   });
 });
 
@@ -136,12 +334,37 @@ describe("App Home and /nathan prs", () => {
     const h = await withPRs();
     await send(h, appHomeOpenedBody("UALICE"), "application/json");
 
-    const view = h.slack.homes.at(-1)?.view;
-    const shown = lines((view?.blocks ?? []) as MessageBlock[]);
+    const shown = lines(h.slack.homes.at(-1)?.view.blocks ?? []);
     expect(shown[0]).toBe(HOME_TEXT);
-    expect(shown).toContain("*Waiting on you* (1)");
-    expect(shown).toContain("*Your open PRs* (1)");
-    expect(shown.join("\n")).toContain(`${REPO}#1`);
+    expect(shown).toContain("# 📥 1 Waiting on You");
+    expect(shown).toContain("# 🚀 1 Open PRs");
+    expect(shown).toContain("[✓ All] [⏰ Overdue · 0] [📥 Waiting on You · 1] [🚀 Your Open PRs · 1]");
+    expect(shown.join("\n")).toContain("<Kiln - #1>");
+  });
+
+  it("switches tabs from the App Home's buttons", async () => {
+    const h = await withPRs();
+    const click = blockActionBody(
+      { action_id: queueTabAction("mine"), value: "mine" },
+      { view: { callbackId: "", type: "home" } },
+    );
+    expect((await send(h, click)).status).toBe(200);
+
+    const view = h.slack.homes.at(-1)?.view;
+    expect(view?.private_metadata).toBe('{"pr_management":"mine"}');
+    const shown = lines(view?.blocks ?? []);
+    expect(shown[0]).toBe(HOME_TEXT);
+    expect(shown).toContain("[All] [⏰ Overdue · 0] [📥 Waiting on You · 1] [✓ 🚀 Your Open PRs · 1]");
+    expect(shown).toContain("# 🚀 Your Open PRs");
+    expect(shown).not.toContain("# 📥 Waiting on You");
+  });
+
+  it("shows an unmapped user how to get added, on the App Home and from /nathan prs", async () => {
+    const h = prApp();
+    await send(h, appHomeOpenedBody("USTRANGER"), "application/json");
+    expect(lines(h.slack.homes.at(-1)?.view.blocks ?? [])).toContain(UNMAPPED_TEXT);
+    await send(h, commandBody("prs").replace("UALICE", "USTRANGER"));
+    expect(h.slack.responses[0]?.reply.text).toBe(UNMAPPED_TEXT);
   });
 
   it("answers /nathan prs with the same queue, as an ephemeral reply", async () => {
@@ -151,13 +374,8 @@ describe("App Home and /nathan prs", () => {
     expect(response.status).toBe(200);
     expect(h.slack.responses).toHaveLength(1);
     const reply = h.slack.responses[0]?.reply;
-    expect(reply?.text).toBe("1 waiting on you, 1 of yours open");
-    expect(lines(reply?.blocks ?? [])).toContain("*Waiting on you* (1)");
-  });
-
-  it("answers an unmapped user with how to get added", async () => {
-    const h = prApp();
-    await send(h, commandBody("prs").replace("UALICE", "USTRANGER"));
-    expect(h.slack.responses[0]?.reply.text).toBe(UNMAPPED_TEXT);
+    expect(reply?.text).toBe("1 waiting on you, 0 overdue, 1 of yours open");
+    expect(lines(reply?.blocks ?? [])).toContain("# 📥 1 Waiting on You");
+    expect(lines(reply?.blocks ?? []).join("\n")).toContain("<Kiln - #1>");
   });
 });

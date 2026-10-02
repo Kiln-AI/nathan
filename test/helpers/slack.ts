@@ -79,7 +79,15 @@ export function viewSubmissionBody(
 
 export function blockActionBody(
   action: { action_id: string; block_id?: string; type?: string; value?: string },
-  container: { view?: { callbackId: string; values?: Record<string, Record<string, unknown>> }; channel?: string } = {},
+  container: {
+    view?: {
+      callbackId: string;
+      values?: Record<string, Record<string, unknown>>;
+      type?: "modal" | "home";
+      privateMetadata?: string;
+    };
+    channel?: string;
+  } = {},
 ): string {
   const base = {
     type: "block_actions",
@@ -99,8 +107,8 @@ export function blockActionBody(
         id: "V9",
         hash: "hash-9",
         callback_id: container.view.callbackId,
-        private_metadata: "meta",
-        type: "modal",
+        private_metadata: container.view.privateMetadata ?? "meta",
+        type: container.view.type ?? "modal",
         state: { values: container.view.values ?? {} },
       },
     });

@@ -3,6 +3,7 @@
 import type {
   ActionsBlock,
   AnyDescriptionOption,
+  AnyRichTextSectionElement,
   Button,
   Checkboxes,
   ContextBlock,
@@ -12,6 +13,8 @@ import type {
   MultiUsersSelect,
   PlainTextField,
   PlainTextInput,
+  RichTextBlock,
+  RichTextSectionText,
   SectionBlock,
   URLInput,
   ViewInputBlock,
@@ -115,6 +118,41 @@ export function chunkBlocks<B>(blocks: readonly B[], size = MAX_MESSAGE_BLOCKS):
   const chunks: B[][] = [];
   for (let start = 0; start < blocks.length; start += size) chunks.push(blocks.slice(start, start + size));
   return chunks;
+}
+
+// ---- Rich text ----------------------------------------------------------------------------
+
+export type RichTextElement = AnyRichTextSectionElement;
+type RichTextStyle = NonNullable<RichTextSectionText["style"]>;
+
+export const richText = {
+  text(text: string, style?: RichTextStyle): RichTextElement {
+    return style ? { type: "text", text, style } : { type: "text", text };
+  },
+  link(url: string, text: string, style?: RichTextStyle): RichTextElement {
+    return style ? { type: "link", url, text, style } : { type: "link", url, text };
+  },
+  /**
+   * A user pill. Unlike mrkdwn mentions, dry run can't defuse it, so use it only where it never
+   * notifies: the App Home and ephemeral replies.
+   */
+  user(slackUserId: string): RichTextElement {
+    return { type: "user", user_id: slackUserId };
+  },
+};
+
+/** A bulleted list, one item per entry. */
+export function richTextList(items: readonly (readonly RichTextElement[])[]): RichTextBlock {
+  return {
+    type: "rich_text",
+    elements: [
+      {
+        type: "rich_text_list",
+        style: "bullet",
+        elements: items.map((elements) => ({ type: "rich_text_section", elements: [...elements] })),
+      },
+    ],
+  };
 }
 
 export function divider(): DividerBlock {
@@ -244,6 +282,6 @@ export function modal(options: {
   return view;
 }
 
-export function homeView(blocks: HomeBlock[]): HomeTabView {
-  return { type: "home", blocks };
+export function homeView(blocks: HomeBlock[], privateMetadata?: string): HomeTabView {
+  return privateMetadata ? { type: "home", blocks, private_metadata: privateMetadata } : { type: "home", blocks };
 }

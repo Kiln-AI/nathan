@@ -186,8 +186,16 @@ There are two equivalent entry points, and both end in the same state: reviewers
 - Nathan never closes PRs.
 
 ### 4.9 Personal queue
-- **App Home tab** (primary): shows "Waiting on you" (PRs where you're an owner, grouped by next step, oldest first, with ages and links) and "Your open PRs" (state and owner for each). It refreshes when opened.
-- **`/nathan prs`**: posts the same content as an ephemeral message.
+- **App Home tab** (primary). It refreshes when opened.
+  - **Stats**, each a big number with a breakdown underneath:
+    - **Overdue**: unique PRs past their reminder threshold (§4.6), split into PRs waiting on you and your PRs waiting on someone else. It uses the same rule as the daily report's Needs attention section.
+    - **Waiting on you**: PRs where you're an owner, counted by your next action.
+    - **Open PRs**: PRs you wrote, counted by state.
+  - **Tabs**: All, Overdue, Waiting on you and Your open PRs. Overdue filters both sections to overdue PRs and has no section of its own. Opening the tab again starts on All.
+  - **Waiting on you**: PRs where you're an owner, grouped by next step, longest waiting first.
+  - **Your open PRs**: grouped by state, most action needed first, naming whoever else they're waiting on.
+  - Each row links the PR as "<repo> - #<number>", then shows its title, author and wait. Overdue rows are flagged ⏰.
+- **`/nathan prs`**: posts the All tab as an ephemeral message, without tabs.
 - A user with no GitHub mapping sees instructions on how to get added.
 
 ## 5. Edge Cases and Error Handling

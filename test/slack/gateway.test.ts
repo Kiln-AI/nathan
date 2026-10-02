@@ -370,6 +370,41 @@ describe("Slack gateway: App Home", () => {
     expect(alerts(h)[0]).toContain("`alpha.home` failed: query failed");
   });
 
+  it("re-renders the home when a home button is clicked, keeping other sections' states", async () => {
+    const h = slackApp((slack) => {
+      slack.homeSection({ order: 1, render: async ({ state }) => [section(`tab: ${state ?? "none"}`)] });
+      slack.homeButton("pick_tab");
+    });
+    const body = blockActionBody(
+      { action_id: "pick_tab", value: "overdue" },
+      { view: { callbackId: "", type: "home", privateMetadata: '{"beta":"x","alpha":"all"}' } },
+    );
+    expect((await send(h, body)).status).toBe(200);
+    expect(h.slack.homes).toEqual([
+      {
+        userId: "UALICE",
+        view: { type: "home", blocks: [section("tab: overdue")], private_metadata: '{"beta":"x","alpha":"overdue"}' },
+      },
+    ]);
+  });
+
+  it("starts the home with no section state when the tab opens", async () => {
+    const h = slackApp((slack) =>
+      slack.homeSection({ order: 1, render: async ({ state }) => [section(`tab: ${state ?? "none"}`)] }),
+    );
+    await send(h, appHomeOpenedBody(), "application/json");
+    expect(h.slack.homes[0]?.view).toEqual({ type: "home", blocks: [section("tab: none")] });
+  });
+
+  it("reports a failed home button re-render", async () => {
+    const h = slackApp((slack) => slack.homeButton("pick_tab"));
+    h.slack.publishHome = async () => {
+      throw new Error("not_enabled");
+    };
+    await send(h, blockActionBody({ action_id: "pick_tab", value: "x" }, { view: { callbackId: "", type: "home" } }));
+    expect(alerts(h)[0]).toContain("`alpha.home_button:pick_tab` failed: not_enabled");
+  });
+
   it("ignores the Messages tab", async () => {
     const h = slackApp(() => {});
     await send(h, appHomeOpenedBody("UBOB", "messages"), "application/json");

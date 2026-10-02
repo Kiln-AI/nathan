@@ -101,7 +101,7 @@ export interface Services {
 
 - `features/index.ts` exports `features: Feature[] = [prManagement]`. To add a feature, create a folder and add it to that array.
 - A feature can be disabled with `enabled: false` in its config section. A disabled feature's `register` is never called.
-- `/nathan help` is generated from the registered subcommands. The App Home view is the concatenation of the feature sections, ordered by each section's `order`.
+- `/nathan help` is generated from the registered subcommands. The App Home view is the concatenation of the feature sections, ordered by each section's `order`. A feature's home buttons (`homeButton`) re-render the App Home with the clicked button's value as that section's state, for example a tab. Each section's state is kept in the view's `private_metadata`, so one section's click doesn't reset the others.
 
 **Handler contracts**:
 - **Slack ack** handlers must return in under 2.5s.

@@ -45,6 +45,8 @@ export interface CommandRequest {
 
 export interface HomeRequest {
   userId: string;
+  /** The value of the section's home button the user last clicked; undefined when the tab was just opened. */
+  state?: string;
 }
 
 // ---- Handlers ------------------------------------------------------------------------------
@@ -107,6 +109,12 @@ export interface SlackRegistry {
   /** `/nathan <name> [args]`. */
   command(name: string, handler: CommandHandler): void;
   homeSection(section: HomeSection): void;
+  /**
+   * A button in the feature's App Home section, by exact action_id. Clicking it re-renders the
+   * App Home with the button's value as the section's `state` (e.g. a tab); opening the tab again
+   * starts from no state.
+   */
+  homeButton(actionId: string): void;
 }
 
 // ---- Storage (core and gateway only) ----------------------------------------------------------
@@ -126,13 +134,18 @@ export class SlackHandlers {
   readonly actions = new Map<string, Registered<ActionHandler>>();
   readonly commands = new Map<string, Registered<CommandHandler>>();
   readonly homeSections: Registered<HomeSection>[] = [];
+  /** Home buttons' action_ids → the feature whose section they belong to. */
+  readonly homeButtons = new Map<string, Registered<null>>();
 
   forFeature(featureId: string): SlackRegistry {
     return {
       shortcut: (callbackId, handler) => add(this.shortcuts, "shortcut", callbackId, { featureId, handler }),
       viewSubmission: (callbackId, handler) =>
         add(this.viewSubmissions, "view submission", callbackId, { featureId, handler }),
-      action: (actionId, handler) => add(this.actions, "action", actionId, { featureId, handler }),
+      action: (actionId, handler) => {
+        this.assertNoHomeButton(actionId);
+        add(this.actions, "action", actionId, { featureId, handler });
+      },
       command: (name, handler) => {
         if (!COMMAND_NAME.test(name))
           throw new Error(`Subcommand "${name}" must be lowercase letters, digits, _ and -`);
@@ -142,7 +155,17 @@ export class SlackHandlers {
       homeSection: (section) => {
         this.homeSections.push({ featureId, handler: section });
       },
+      homeButton: (actionId) => {
+        const existing = this.actions.get(actionId);
+        if (existing) throw new Error(`Slack action "${actionId}" is already registered by ${existing.featureId}`);
+        add(this.homeButtons, "action", actionId, { featureId, handler: null });
+      },
     };
+  }
+
+  private assertNoHomeButton(actionId: string): void {
+    const existing = this.homeButtons.get(actionId);
+    if (existing) throw new Error(`Slack action "${actionId}" is already registered by ${existing.featureId}`);
   }
 }
 
