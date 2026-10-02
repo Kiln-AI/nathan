@@ -28,8 +28,9 @@ export function parseHomeStates(privateMetadata: string | undefined): HomeStates
 
 /**
  * The App Home is each feature's section, in ascending `order` (ties keep registration order),
- * separated by dividers. A failing section is replaced by a notice, so others still show. The
- * states are stored in the view, so a home button can change one section and keep the others.
+ * separated by dividers. A failing section is replaced by a notice, so others still show. Each
+ * feature's state is stored in the view, so a home button can change its feature's state and keep
+ * the others'.
  */
 export async function composeHome(
   sections: readonly Registered<HomeSection>[],

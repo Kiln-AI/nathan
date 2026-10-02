@@ -68,7 +68,8 @@ function labelBlocks(prefix: string, blocks: MessageBlock[]): MessageBlock[] {
 }
 
 // Only mrkdwn/plain-text strings are rewritten: rich_text `user` and `broadcast` elements would
-// still notify people, so dry-run-safe features must not use them (the block helpers don't).
+// still notify people, so dry-run-safe features must not use them. Only `richText.user` builds one,
+// and it is meant only for the App Home and ephemeral replies, which never notify.
 const USER_MENTION = /<@([UW][A-Z0-9]+)(?:\|([^>]*))?>/g;
 const SPECIAL_MENTION = /<!(here|channel|everyone)(?:\|[^>]*)?>/g;
 const GROUP_MENTION = /<!subteam\^([A-Z0-9]+)(?:\|@?([^>]*))?>/g;

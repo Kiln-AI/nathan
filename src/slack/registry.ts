@@ -45,7 +45,10 @@ export interface CommandRequest {
 
 export interface HomeRequest {
   userId: string;
-  /** The value of the section's home button the user last clicked; undefined when the tab was just opened. */
+  /**
+   * The value of the feature's home button the user last clicked; undefined when the tab was just
+   * opened. State is per feature: every section a feature registers gets the same value.
+   */
   state?: string;
 }
 
@@ -110,9 +113,9 @@ export interface SlackRegistry {
   command(name: string, handler: CommandHandler): void;
   homeSection(section: HomeSection): void;
   /**
-   * A button in the feature's App Home section, by exact action_id. Clicking it re-renders the
-   * App Home with the button's value as the section's `state` (e.g. a tab); opening the tab again
-   * starts from no state.
+   * A button in one of the feature's App Home sections, by exact action_id. Clicking it re-renders
+   * the App Home with the button's value as the feature's `state` (e.g. a tab), keeping other
+   * features' states; opening the tab again starts from no state.
    */
   homeButton(actionId: string): void;
 }

@@ -160,7 +160,7 @@ export function createSlackGateway({
     await slack.publishHome(userId, view);
   }
 
-  // A home button only re-renders the App Home, after the ack, with its value as its section's state.
+  // A home button only re-renders the App Home, after the ack, with its value as its feature's state.
   for (const [actionId, { featureId }] of handlers.homeButtons) {
     app.action(
       actionId,

@@ -173,7 +173,9 @@ async function ownerWaits(
  * Each PR's owners who are past its reminder threshold, by `prKey`: working hours in the current
  * state, weekends excluded, in the time zone of whoever is told about them (the report's zone
  * when nobody can be). PRs that never get reminders (drafts, merge queue) have no overdue owners.
- * The daily report and the personal queue both use this, so they always agree.
+ * The daily report's Needs attention section and the personal queue's Overdue both use this rule;
+ * Needs attention additionally leaves Dependabot PRs to their own section, while the triager's
+ * queue counts them.
  */
 export async function overdueOwners(
   ctx: PRContext,

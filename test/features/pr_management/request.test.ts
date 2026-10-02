@@ -1,6 +1,6 @@
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { describe, expect, it, vi } from "vitest";
-import { HOME_TEXT } from "../../../src/features/pr_management/request";
+import { HOME_TEXT, REFRESH_HOME_ACTION } from "../../../src/features/pr_management/request";
 import {
   FIELD,
   MESSAGES,
@@ -89,6 +89,11 @@ describe("Request PR: opening the form", () => {
     const home = JSON.stringify(h.slack.homes[0]?.view.blocks);
     expect(home).toContain(HOME_TEXT.slice(0, 20));
     expect(home).toContain(`"action_id":"${OPEN_REQUEST_PR_ACTION}"`);
+    // Beside it: a secondary Refresh button, and when the view was rendered, in the viewer's zone.
+    expect(home).toContain(`"action_id":"${REFRESH_HOME_ACTION}"`);
+    expect(home).toContain(
+      `<!date^${Math.floor(h.clock.now().toSeconds())}^Updated {date_short_pretty} at {time}|Updated 14:00 UTC>`,
+    );
 
     await send(h, blockActionBody({ action_id: OPEN_REQUEST_PR_ACTION }));
     expect(h.slack.openedViews).toEqual([{ triggerId: "trigger-3", view: requestModal() }]);

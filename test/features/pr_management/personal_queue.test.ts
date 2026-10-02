@@ -19,7 +19,7 @@ import {
   renderQueueMessage,
   UNMAPPED_TEXT,
 } from "../../../src/features/pr_management/personal_queue";
-import { HOME_TEXT } from "../../../src/features/pr_management/request";
+import { HOME_TEXT, REFRESH_HOME_ACTION } from "../../../src/features/pr_management/request";
 import type { PRRecord } from "../../../src/features/pr_management/store";
 import { type HomeBlock, type MessageBlock, section } from "../../../src/slack";
 import { aPR } from "../../builders/github";
@@ -357,6 +357,37 @@ describe("App Home and /nathan prs", () => {
     expect(shown).toContain("[All] [⏰ Overdue · 0] [📥 Waiting on You · 1] [✓ 🚀 Your Open PRs · 1]");
     expect(shown).toContain("# 🚀 Your Open PRs");
     expect(shown).not.toContain("# 📥 Waiting on You");
+  });
+
+  it("counts and flags a PR once it passes the reminder threshold", async () => {
+    const h = await withPRs(); // refreshed Monday 14:00 UTC
+    h.clock.set("2026-10-06T16:00:00Z"); // 26 working hours later
+    await send(h, appHomeOpenedBody("UALICE"), "application/json");
+
+    const shown = lines(h.slack.homes.at(-1)?.view.blocks ?? []);
+    expect(shown).toContain("# ⏰ 2 Overdue");
+    expect(shown).toContain("1 waiting on you · 1 of your PRs, waiting on others · oldest 1d 2h");
+    expect(shown).toContain("• <Kiln - #1> Add the thing · @UBOB · *⏰ 1d 2h*");
+    expect(shown).toContain("• <Kiln - #2> Add the thing · waiting on @UCAROL · *⏰ 1d 2h*");
+  });
+
+  it("refreshes from the App Home's Refresh button, keeping the tab", async () => {
+    const h = await withPRs();
+    const refresh = blockActionBody(
+      { action_id: REFRESH_HOME_ACTION, value: "mine" },
+      { view: { callbackId: "", type: "home", privateMetadata: '{"pr_management":"mine"}' } },
+    );
+    await send(h, refresh);
+
+    const view = h.slack.homes.at(-1)?.view;
+    expect(view?.private_metadata).toBe('{"pr_management":"mine"}');
+    const shown = lines(view?.blocks ?? []);
+    expect(shown[1]).toBe("[Request PR] [↻ Refresh]");
+    expect(shown).toContain("[All] [⏰ Overdue · 0] [📥 Waiting on You · 1] [✓ 🚀 Your Open PRs · 1]");
+    const refreshButton = view?.blocks
+      .flatMap((b) => (b.type === "actions" ? b.elements : []))
+      .find((e) => "action_id" in e && e.action_id === REFRESH_HOME_ACTION);
+    expect(refreshButton).toMatchObject({ action_id: REFRESH_HOME_ACTION, value: "mine" });
   });
 
   it("shows an unmapped user how to get added, on the App Home and from /nathan prs", async () => {

@@ -1,13 +1,9 @@
 import { DateTime } from "luxon";
 import { describe, expect, it, vi } from "vitest";
-import { loadConfig } from "../../../src/core/config";
-import { prManagement } from "../../../src/features/pr_management";
-import type { PRConfig } from "../../../src/features/pr_management/config";
 import { draftNudgesDue, draftNudgeText, nudgeDraftIfDue } from "../../../src/features/pr_management/drafts";
-import type { PRContext } from "../../../src/features/pr_management/refresh";
 import type { PRData } from "../../../src/github";
 import { aPR } from "../../builders/github";
-import { type PRTestApp, prApp, prConfig, sweepAt, testPeople } from "../../helpers/pr";
+import { type PRTestApp, prApp, prConfig, prContext, sweepAt } from "../../helpers/pr";
 
 // Draft nudges (spec §4.8). aPR() is opened 2026-10-01T15:00Z, so it is 14 days old at
 // 2026-10-15T15:00Z.
@@ -15,12 +11,6 @@ import { type PRTestApp, prApp, prConfig, sweepAt, testPeople } from "../../help
 const config = { nudgeAfterDays: 14, nudgeEveryDays: 7, reportAfterDays: 30 };
 const SINCE = DateTime.fromISO("2026-10-01T15:00:00Z", { zone: "utc" });
 const LINK = "<https://github.com/Kiln-AI/Kiln/pull/101|Kiln-AI/Kiln#101> Add the thing";
-
-/** The feature's context over the test app, for calling its functions directly. */
-function prContext(h: PRTestApp): PRContext {
-  const config = loadConfig(prConfig(), "development", [prManagement]).features.get("pr_management") as PRConfig;
-  return { config, services: h.app.services, store: h.store, people: testPeople() };
-}
 
 async function draftSeen(h: PRTestApp, overrides: Partial<PRData> = {}) {
   h.github.upsert(aPR({ isDraft: true, ...overrides }));

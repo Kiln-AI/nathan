@@ -41,9 +41,8 @@ export const UNMAPPED_TEXT =
 export const NOTHING_WAITING_TEXT = "Nothing's waiting on you 🎉";
 export const NO_OPEN_PRS_TEXT = "You have no open PRs.";
 export const NOTHING_OVERDUE_TEXT = "Nothing overdue 🎉";
-export const QUEUE_TRUNCATED_TEXT =
-  "_Some PRs are hidden: a message holds only 50 blocks. My App Home tab has them all._";
-/** Rows shown per group; the rest are counted. */
+export const QUEUE_TRUNCATED_TEXT = "_Some PRs are hidden: a message holds only 50 blocks._";
+/** Rows shown per group, on the App Home and in `/nathan prs`; the rest are counted ("…and N more"). */
 export const MAX_GROUP_ROWS = 30;
 
 export const QUEUE_TABS = ["all", "overdue", "waiting", "mine"] as const;
