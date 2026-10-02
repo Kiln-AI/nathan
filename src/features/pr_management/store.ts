@@ -19,6 +19,8 @@ export interface PRRecord {
   mergeable: Mergeable;
   state: PRStatusState;
   owners: string[];
+  /** Reviewers whose latest review approves the PR, unless they're requested again. */
+  approvers: string[];
   /** When state or owners last changed. */
   stateSince: DateTime;
   /** When the PR was opened or last converted to draft, whichever is later; null when not a draft. */
@@ -101,6 +103,7 @@ interface PRRow {
   mergeable: string;
   state: string;
   owners: string;
+  approvers: string;
   state_since: number;
   draft_since: number | null;
   modifiers: string;
@@ -146,6 +149,7 @@ const REFRESHED_COLUMNS = [
   "mergeable",
   "state",
   "owners",
+  "approvers",
   "state_since",
   "draft_since",
   "modifiers",
@@ -170,6 +174,7 @@ export function createPRStore(db: Db) {
     record.mergeable,
     record.state,
     JSON.stringify(record.owners),
+    JSON.stringify(record.approvers),
     record.stateSince.toMillis(),
     record.draftSince?.toMillis() ?? null,
     JSON.stringify(record.modifiers),
@@ -409,6 +414,7 @@ function toRecord(row: PRRow): PRRecord {
     mergeable: row.mergeable as Mergeable,
     state: row.state as PRStatusState,
     owners: JSON.parse(row.owners) as string[],
+    approvers: JSON.parse(row.approvers) as string[],
     stateSince: at(row.state_since),
     draftSince: row.draft_since === null ? null : at(row.draft_since),
     modifiers: JSON.parse(row.modifiers) as string[],

@@ -56,6 +56,23 @@ describe("refresh: the record", () => {
     expect(await h.record(101)).toMatchObject({ owners: ["carol"], stateSince: h.clock.now() });
   });
 
+  it("stores who approved, dropping a reviewer once they're requested again", async () => {
+    const h = prApp();
+    h.github.upsert(aPR({ pendingReviewers: ["bob", "joe"] }));
+    await h.refresh(101);
+    expect(await h.record(101)).toMatchObject({ owners: ["bob", "joe"], approvers: [] });
+
+    h.github.upsert(aPR({ pendingReviewers: ["joe"], reviews: [aReview({ author: "bob", state: "approved" })] }));
+    await h.refresh(101);
+    expect(await h.record(101)).toMatchObject({ owners: ["joe"], approvers: ["bob"] });
+
+    h.github.upsert(
+      aPR({ pendingReviewers: ["bob", "joe"], reviews: [aReview({ author: "bob", state: "approved" })] }),
+    );
+    await h.refresh(101);
+    expect(await h.record(101)).toMatchObject({ owners: ["bob", "joe"], approvers: [] });
+  });
+
   it("categorizes Dependabot and OSS PRs and gives author-side steps to the triager", async () => {
     const h = prApp();
     h.github.upsert(aPR({ number: 1, author: "dependabot[bot]", authorIsBot: true }));
