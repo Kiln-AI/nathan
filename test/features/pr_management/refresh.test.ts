@@ -56,21 +56,63 @@ describe("refresh: the record", () => {
     expect(await h.record(101)).toMatchObject({ owners: ["carol"], stateSince: h.clock.now() });
   });
 
-  it("stores who approved, dropping a reviewer once they're requested again", async () => {
+  it("stores every reviewer with their status, as on the card", async () => {
     const h = prApp();
-    h.github.upsert(aPR({ pendingReviewers: ["bob", "joe"] }));
+    h.github.upsert(
+      aPR({
+        pendingReviewers: ["joe"],
+        pendingTeams: ["core"],
+        reviews: [
+          aReview({ author: "bob", state: "approved" }),
+          aReview({ author: "carol", state: "changes_requested" }),
+          aReview({ author: "dan", state: "dismissed" }),
+          aReview({ author: "alice", state: "commented" }),
+        ],
+      }),
+    );
     await h.refresh(101);
-    expect(await h.record(101)).toMatchObject({ owners: ["bob", "joe"], approvers: [] });
+    expect((await h.record(101))?.reviewers).toEqual([
+      { login: "joe", status: "pending" },
+      { login: "core", status: "pending", team: true },
+      { login: "bob", status: "approved" },
+      { login: "carol", status: "changes_requested" },
+    ]);
+  });
 
+  it("marks a reviewer requested again as pending", async () => {
+    const h = prApp();
     h.github.upsert(aPR({ pendingReviewers: ["joe"], reviews: [aReview({ author: "bob", state: "approved" })] }));
     await h.refresh(101);
-    expect(await h.record(101)).toMatchObject({ owners: ["joe"], approvers: ["bob"] });
+    expect((await h.record(101))?.reviewers).toEqual([
+      { login: "joe", status: "pending" },
+      { login: "bob", status: "approved" },
+    ]);
 
     h.github.upsert(
       aPR({ pendingReviewers: ["bob", "joe"], reviews: [aReview({ author: "bob", state: "approved" })] }),
     );
     await h.refresh(101);
-    expect(await h.record(101)).toMatchObject({ owners: ["bob", "joe"], approvers: [] });
+    expect((await h.record(101))?.reviewers).toEqual([
+      { login: "bob", status: "pending" },
+      { login: "joe", status: "pending" },
+    ]);
+  });
+
+  it("keeps the staleness clock when only the reviews change", async () => {
+    const h = prApp();
+    await withCard(h);
+    const since = (await h.record(101))?.stateSince;
+    h.clock.advance({ hours: 3 });
+    h.github.upsert(awaitingBob({ reviews: [aReview({ author: "carol", state: "commented" })] }));
+    await h.refresh(101);
+    expect(await h.record(101)).toMatchObject({
+      owners: ["bob"],
+      reviewers: [
+        { login: "bob", status: "pending" },
+        { login: "carol", status: "commented" },
+      ],
+      stateSince: since,
+    });
   });
 
   it("categorizes Dependabot and OSS PRs and gives author-side steps to the triager", async () => {

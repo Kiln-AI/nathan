@@ -1,6 +1,7 @@
 import { DateTime } from "luxon";
 import type { Db, SqlParam } from "../../core/db";
 import type { Mergeable } from "../../github";
+import { decodeReviewers, type ReviewerLine } from "./reviewers";
 import type { PRCategory, PRStatusState } from "./status";
 
 /** Nathan's own facts about a PR (architecture §6: D1 is authoritative only for these). */
@@ -19,8 +20,8 @@ export interface PRRecord {
   mergeable: Mergeable;
   state: PRStatusState;
   owners: string[];
-  /** Reviewers whose latest review approves the PR, unless they're requested again. */
-  approvers: string[];
+  /** Every reviewer with their status, as on the card: a reviewer requested again is pending. */
+  reviewers: ReviewerLine[];
   /** When state or owners last changed. */
   stateSince: DateTime;
   /** When the PR was opened or last converted to draft, whichever is later; null when not a draft. */
@@ -103,7 +104,7 @@ interface PRRow {
   mergeable: string;
   state: string;
   owners: string;
-  approvers: string;
+  reviewers: string;
   state_since: number;
   draft_since: number | null;
   modifiers: string;
@@ -149,7 +150,7 @@ const REFRESHED_COLUMNS = [
   "mergeable",
   "state",
   "owners",
-  "approvers",
+  "reviewers",
   "state_since",
   "draft_since",
   "modifiers",
@@ -174,7 +175,7 @@ export function createPRStore(db: Db) {
     record.mergeable,
     record.state,
     JSON.stringify(record.owners),
-    JSON.stringify(record.approvers),
+    JSON.stringify(record.reviewers),
     record.stateSince.toMillis(),
     record.draftSince?.toMillis() ?? null,
     JSON.stringify(record.modifiers),
@@ -414,7 +415,7 @@ function toRecord(row: PRRow): PRRecord {
     mergeable: row.mergeable as Mergeable,
     state: row.state as PRStatusState,
     owners: JSON.parse(row.owners) as string[],
-    approvers: JSON.parse(row.approvers) as string[],
+    reviewers: decodeReviewers(row.reviewers),
     stateSince: at(row.state_since),
     draftSince: row.draft_since === null ? null : at(row.draft_since),
     modifiers: JSON.parse(row.modifiers) as string[],
