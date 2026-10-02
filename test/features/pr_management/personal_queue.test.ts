@@ -96,6 +96,7 @@ const onBob = aRecord({
   author: "Alice",
   state: "awaiting_review",
   owners: ["bob"],
+  reviewers: [{ login: "bob", status: "pending" }],
   stateSince: hoursAgo(30),
 });
 const notMine = aRecord({ number: 2, author: "carol", state: "approved", owners: ["carol"], stateSince: hoursAgo(50) });
@@ -230,7 +231,7 @@ describe("renderHome", () => {
       "❌ CI failing · 1",
       "• <Kiln - #4> Add the thing · 2h",
       "👀 Awaiting review · 1 · 1 overdue",
-      "• <Kiln - #7> Add the thing · waiting on @UBOB · *⏰ 1d 6h*",
+      "• <Kiln - #7> Add the thing · ⏳ @UBOB · *⏰ 1d 6h*",
       "📝 Draft · 1",
       "• <Kiln - #5> Add the thing · 2w 2d",
     ]);
@@ -247,7 +248,7 @@ describe("renderHome", () => {
       "# 🚀 Your Open PRs",
       "1 overdue on someone else.",
       "👀 Awaiting review · 1",
-      "• <Kiln - #7> Add the thing · waiting on @UBOB · *⏰ 1d 6h*",
+      "• <Kiln - #7> Add the thing · ⏳ @UBOB · *⏰ 1d 6h*",
     ]);
     const none = home("overdue", "dan");
     expect(none.slice(none.indexOf("# 📥 Waiting on You"))).toEqual([
@@ -266,36 +267,57 @@ describe("renderHome", () => {
     expect(mine.filter((l) => l.startsWith("# ") && !/\d/.test(l))).toEqual(["# 🚀 Your Open PRs"]);
   });
 
-  it("names every other owner your PR waits on", () => {
-    const two = aRecord({ number: 8, author: "alice", state: "awaiting_review", owners: ["bob", "outsider"] });
-    expect(home("mine", "alice", [two], new Map())).toContain(
-      "• <Kiln - #8> Add the thing · waiting on @UBOB, outsider · 3d 23h",
+  it("lists every reviewer with their status, as on the card", () => {
+    const reviewed = aRecord({
+      number: 8,
+      author: "alice",
+      state: "changes_requested",
+      owners: ["alice"],
+      reviewers: [
+        { login: "joe", status: "pending" },
+        { login: "core", status: "pending", team: true },
+        { login: "carol", status: "changes_requested" },
+        { login: "bob", status: "approved" },
+        { login: "outsider", status: "commented" },
+      ],
+    });
+    expect(home("mine", "alice", [reviewed], new Map())).toContain(
+      "• <Kiln - #8> Add the thing · ⏳ joe, ⏳ core (team), 🔁 @UCAROL, ✅ @UBOB, 💬 outsider · 3d 23h",
     );
   });
 
-  it("keeps reviewers who approved in the list, checked", () => {
-    const partly = aRecord({
+  it("names whoever else it waits on who isn't a reviewer, before the reviewers", () => {
+    const onTriager = aRecord({
+      number: 8,
+      author: "alice",
+      state: "ci_failing",
+      owners: ["Dan", "alice"],
+      reviewers: [{ login: "bob", status: "approved" }],
+    });
+    expect(home("mine", "alice", [onTriager], new Map())).toContain(
+      "• <Kiln - #8> Add the thing · @UDAN, ✅ @UBOB · 3d 23h",
+    );
+  });
+
+  it("names an owner who is also a reviewer once, with their status", () => {
+    const two = aRecord({
       number: 8,
       author: "alice",
       state: "awaiting_review",
-      owners: ["joe"],
-      approvers: ["bob", "outsider"],
+      owners: ["bob", "outsider"],
+      reviewers: [
+        { login: "Bob", status: "pending" },
+        { login: "outsider", status: "pending" },
+      ],
     });
-    expect(home("mine", "alice", [partly], new Map())).toContain(
-      "• <Kiln - #8> Add the thing · waiting on joe, ✅ @UBOB, ✅ outsider · 3d 23h",
+    expect(home("mine", "alice", [two], new Map())).toContain(
+      "• <Kiln - #8> Add the thing · ⏳ @UBOB, ⏳ outsider · 3d 23h",
     );
   });
 
-  it("names only the approvers, checked, once the PR is back with you", () => {
-    const approved = aRecord({ number: 8, author: "alice", state: "approved", owners: ["alice"], approvers: ["bob"] });
-    expect(home("mine", "alice", [approved], new Map())).toContain("• <Kiln - #8> Add the thing · ✅ @UBOB · 3d 23h");
-  });
-
-  it("doesn't check an approver the PR waits on again", () => {
-    const oss = aRecord({ number: 8, author: "alice", state: "approved", owners: ["Dan"], approvers: ["dan"] });
-    expect(home("mine", "alice", [oss], new Map())).toContain(
-      "• <Kiln - #8> Add the thing · waiting on @UDAN · 3d 23h",
-    );
+  it("names nobody when there are no reviewers and it's on you", () => {
+    const yours = aRecord({ number: 8, author: "alice", state: "ci_failing", owners: ["alice"] });
+    expect(home("mine", "alice", [yours], new Map())).toContain("• <Kiln - #8> Add the thing · 3d 23h");
   });
 
   it(`shows at most ${MAX_GROUP_ROWS} rows per group and counts the rest`, () => {
@@ -393,7 +415,7 @@ describe("App Home and /nathan prs", () => {
     expect(shown).toContain("# ⏰ 2 Overdue");
     expect(shown).toContain("1 waiting on you · 1 of your PRs, waiting on others · oldest 1d 2h");
     expect(shown).toContain("• <Kiln - #1> Add the thing · @UBOB · *⏰ 1d 2h*");
-    expect(shown).toContain("• <Kiln - #2> Add the thing · waiting on @UCAROL · *⏰ 1d 2h*");
+    expect(shown).toContain("• <Kiln - #2> Add the thing · ⏳ @UCAROL · *⏰ 1d 2h*");
   });
 
   it("refreshes from the App Home's Refresh button, keeping the tab", async () => {

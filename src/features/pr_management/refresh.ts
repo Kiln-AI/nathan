@@ -1,7 +1,7 @@
 import { DateTime } from "luxon";
 import type { Services } from "../../core/feature";
 import type { PRData } from "../../github";
-import { approvers, type CardModel, type RenderedCard, renderCard, reviewerLines } from "./card";
+import { type CardModel, type RenderedCard, renderCard, reviewerLines } from "./card";
 import type { PRConfig } from "./config";
 import { describeHandoff } from "./handoff";
 import type { People } from "./people";
@@ -139,7 +139,7 @@ function fromPullRequest(
     mergeable: effectiveMergeable(pr.mergeable, before?.mergeable),
     state: status.state,
     owners: status.owners,
-    approvers: approvers(pr),
+    reviewers: reviewerLines(pr),
     stateSince: before && !changed ? before.stateSince : readAt,
     draftSince: pr.isDraft ? DateTime.max(pr.createdAt, pr.lastConvertedToDraftAt ?? pr.createdAt) : null,
     refreshedAt: readAt,

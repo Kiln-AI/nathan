@@ -64,13 +64,6 @@ export function reviewerLines(pr: PRData): ReviewerLine[] {
   return lines;
 }
 
-/** Reviewers who approved: a reviewer requested again is pending again, so isn't one. */
-export function approvers(pr: PRData): string[] {
-  return reviewerLines(pr)
-    .filter((line) => line.status === "approved")
-    .map((line) => line.login);
-}
-
 function pendingLine(login: string, team = false): ReviewerLine {
   return team ? { login, status: "pending", team } : { login, status: "pending" };
 }
