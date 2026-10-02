@@ -1,15 +1,19 @@
 import { DateTime } from "luxon";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_REMINDER_TEMPLATES, type ReminderConfig } from "../../../src/features/pr_management/config";
+import { prKey } from "../../../src/features/pr_management/metrics";
 import {
   currentReminders,
   type OwnerWait,
+  overdueOwners,
   pickTemplate,
   planReminder,
   reminderText,
   thresholdHours,
 } from "../../../src/features/pr_management/reminders";
 import { NO_REMINDERS } from "../../../src/features/pr_management/store";
+import { aRecord } from "../../builders/pr_record";
+import { prApp, prContext } from "../../helpers/pr";
 
 const config: ReminderConfig = {
   thresholdHours: 24,
@@ -134,5 +138,40 @@ describe("reminderText", () => {
       ageHours: 100,
     });
     expect(text).toBe("<@UBOB> <@UCAROL> — Friendly nudge 👋\n*Next step:* Review · waiting 1d 2h · opened 4d 4h ago");
+  });
+});
+
+describe("overdueOwners", () => {
+  const utc = (iso: string) => DateTime.fromISO(iso, { zone: "utc" });
+
+  it("lists owners past the state's threshold in working hours, leaving out PRs that never get reminders", async () => {
+    const now = utc("2026-10-12T12:00:00Z"); // Monday
+    const records = [
+      // 28 working hours waiting on alice and bob.
+      aRecord({
+        number: 1,
+        state: "awaiting_review",
+        owners: ["alice", "bob"],
+        stateSince: utc("2026-10-09T08:00:00Z"),
+      }),
+      // 64 hours, but only 16 of them on weekdays.
+      aRecord({ number: 2, state: "awaiting_review", owners: ["bob"], stateSince: utc("2026-10-09T20:00:00Z") }),
+      // 5 hours, past the urgent threshold.
+      aRecord({
+        number: 3,
+        state: "ci_failing",
+        owners: ["carol"],
+        modifiers: ["urgent"],
+        stateSince: now.minus({ hours: 5 }),
+      }),
+      // Drafts and merge queues are never overdue, however old.
+      aRecord({ number: 4, state: "draft", owners: ["alice"], stateSince: utc("2026-09-01T00:00:00Z") }),
+      aRecord({ number: 5, state: "in_merge_queue", owners: [], stateSince: utc("2026-09-01T00:00:00Z") }),
+    ];
+    const overdue = await overdueOwners(prContext(prApp()), records, now);
+    expect([...overdue]).toEqual([
+      [prKey(records[0] ?? aRecord()), ["alice", "bob"]],
+      [prKey(records[2] ?? aRecord()), ["carol"]],
+    ]);
   });
 });

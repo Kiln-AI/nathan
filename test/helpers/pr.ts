@@ -1,7 +1,10 @@
 import type { AppOverrides } from "../../src/core/app";
+import { loadConfig } from "../../src/core/config";
 import { normalizeGithubLogin, type UserDirectory } from "../../src/core/directory";
 import { prManagement } from "../../src/features/pr_management";
+import type { PRConfig } from "../../src/features/pr_management/config";
 import { createPeople, type People } from "../../src/features/pr_management/people";
+import type { PRContext } from "../../src/features/pr_management/refresh";
 import { createPRStore } from "../../src/features/pr_management/store";
 import { aConfig } from "../builders/config";
 import { fakeBatch, fakeMessage } from "../fakes/batch";
@@ -57,6 +60,12 @@ export function prApp(overrides: AppOverrides = {}) {
 }
 
 export type PRTestApp = ReturnType<typeof prApp>;
+
+/** The feature's context over the test app, for calling its functions directly. */
+export function prContext(h: PRTestApp): PRContext {
+  const config = loadConfig(prConfig(), "development", [prManagement]).features.get("pr_management") as PRConfig;
+  return { config, services: h.app.services, store: h.store, people: testPeople() };
+}
 
 /**
  * Runs the scheduler tick at `iso` with the daily report held back, for tests of the hourly sweep:

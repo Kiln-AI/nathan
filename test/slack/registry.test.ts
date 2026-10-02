@@ -19,10 +19,24 @@ describe("SlackHandlers", () => {
     ["view submission", (r: ReturnType<SlackHandlers["forFeature"]>) => r.viewSubmission("x", { ack: noop })],
     ["action", (r: ReturnType<SlackHandlers["forFeature"]>) => r.action("x", {})],
     ["subcommand", (r: ReturnType<SlackHandlers["forFeature"]>) => r.command("x", { description: "d" })],
+    ["action", (r: ReturnType<SlackHandlers["forFeature"]>) => r.homeButton("x")],
   ])("rejects a duplicate %s, including across features", (kind, register) => {
     const handlers = new SlackHandlers();
     register(handlers.forFeature("alpha"));
     expect(() => register(handlers.forFeature("beta"))).toThrow(`Slack ${kind} "x" is already registered by alpha`);
+  });
+
+  it("shares action IDs between actions and home buttons, either way round", () => {
+    const handlers = new SlackHandlers();
+    handlers.forFeature("alpha").action("x", {});
+    handlers.forFeature("alpha").homeButton("y");
+    expect(() => handlers.forFeature("beta").homeButton("x")).toThrow(
+      'Slack action "x" is already registered by alpha',
+    );
+    expect(() => handlers.forFeature("beta").action("y", {})).toThrow(
+      'Slack action "y" is already registered by alpha',
+    );
+    expect(handlers.homeButtons.get("y")?.featureId).toBe("alpha");
   });
 
   it.each(["Prs", "-x", ""])("rejects the subcommand name %j", (name) => {

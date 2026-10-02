@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { context, divider, type HomeSection, section } from "../../src/slack";
-import { composeHome, EMPTY_HOME_TEXT, SECTION_FAILED_TEXT, TRUNCATED_TEXT } from "../../src/slack/home";
+import {
+  composeHome,
+  EMPTY_HOME_TEXT,
+  parseHomeStates,
+  SECTION_FAILED_TEXT,
+  TRUNCATED_TEXT,
+} from "../../src/slack/home";
 import type { Registered } from "../../src/slack/registry";
 
 const sectionOf = (featureId: string, order: number, render: HomeSection["render"]): Registered<HomeSection> => ({
@@ -81,5 +87,41 @@ describe("composeHome", () => {
     expect(blocks).toHaveLength(100);
     expect(blocks[98]).toEqual(section("row 98"));
     expect(blocks[99]).toEqual(context(TRUNCATED_TEXT));
+  });
+
+  it("gives each section its own state, and stores all of them in the view", async () => {
+    const seen: (string | undefined)[] = [];
+    const view = await composeHome(
+      [
+        sectionOf("a", 1, async ({ state }) => {
+          seen.push(state);
+          return [section("A")];
+        }),
+        sectionOf("b", 2, async ({ state }) => {
+          seen.push(state);
+          return [section("B")];
+        }),
+      ],
+      "U1",
+      noReports,
+      { a: "overdue" },
+    );
+    expect(seen).toEqual(["overdue", undefined]);
+    expect(view.private_metadata).toBe('{"a":"overdue"}');
+  });
+
+  it("leaves private_metadata out when no section has state", async () => {
+    expect(await composeHome([showing("a", 1, "A")], "U1", noReports)).not.toHaveProperty("private_metadata");
+  });
+});
+
+describe("parseHomeStates", () => {
+  it("reads string states and ignores anything else", () => {
+    expect(parseHomeStates('{"a":"tab","b":3}')).toEqual({ a: "tab" });
+    expect(parseHomeStates(undefined)).toEqual({});
+    expect(parseHomeStates("")).toEqual({});
+    expect(parseHomeStates("not json")).toEqual({});
+    expect(parseHomeStates('["a"]')).toEqual({});
+    expect(parseHomeStates("null")).toEqual({});
   });
 });

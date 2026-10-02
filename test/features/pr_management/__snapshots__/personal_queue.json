@@ -1,19 +1,425 @@
-{
-  "text": "3 waiting on you, 3 of yours open",
-  "blocks": [
-    {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "*Waiting on you* (3)\n*Review*\n• <https://github.com/Kiln-AI/Kiln/pull/3|Kiln-AI/Kiln#3> Add the thing · by bob · waiting 1d 6h\n• <https://github.com/Kiln-AI/Kiln/pull/1|Kiln-AI/Kiln#1> Add the thing · by bob · waiting 5h\n*Fix CI*\n• <https://github.com/Kiln-AI/Kiln/pull/4|Kiln-AI/Kiln#4> Add the thing · by alice · waiting 2h"
-      }
-    },
-    {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "*Your open PRs* (3)\n• <https://github.com/Kiln-AI/Kiln/pull/5|Kiln-AI/Kiln#5> Add the thing · 📝 Draft · Owner: <@UALICE> · opened 2w 2d ago\n• <https://github.com/Kiln-AI/Kiln/pull/4|Kiln-AI/Kiln#4> Add the thing · ❌ CI failing · Owner: <@UALICE> · opened 3d 23h ago\n• <https://github.com/Kiln-AI/Kiln/pull/7|Kiln-AI/Kiln#7> Add the thing · 👀 Awaiting review · Owner: <@UBOB> · opened 10h ago"
-      }
+[
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "⏰ 2 Overdue",
+      "emoji": true
     }
-  ]
-}
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "1 waiting on you · 1 of your PRs, waiting on others · oldest 2d 6h"
+      }
+    ]
+  },
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "📥 3 Waiting on You",
+      "emoji": true
+    }
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "2 reviews requested · 1 CI failing"
+      }
+    ]
+  },
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "🚀 3 Open PRs",
+      "emoji": true
+    }
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "❌ 1 CI failing · 👀 1 awaiting review · 📝 1 draft"
+      }
+    ]
+  },
+  {
+    "type": "divider"
+  },
+  {
+    "type": "actions",
+    "elements": [
+      {
+        "type": "button",
+        "action_id": "pr_queue_tab_all",
+        "text": {
+          "type": "plain_text",
+          "text": "✓ All",
+          "emoji": true
+        },
+        "value": "all"
+      },
+      {
+        "type": "button",
+        "action_id": "pr_queue_tab_overdue",
+        "text": {
+          "type": "plain_text",
+          "text": "⏰ Overdue · 2",
+          "emoji": true
+        },
+        "value": "overdue"
+      },
+      {
+        "type": "button",
+        "action_id": "pr_queue_tab_waiting",
+        "text": {
+          "type": "plain_text",
+          "text": "📥 Waiting on You · 3",
+          "emoji": true
+        },
+        "value": "waiting"
+      },
+      {
+        "type": "button",
+        "action_id": "pr_queue_tab_mine",
+        "text": {
+          "type": "plain_text",
+          "text": "🚀 Your Open PRs · 3",
+          "emoji": true
+        },
+        "value": "mine"
+      }
+    ]
+  },
+  {
+    "type": "divider"
+  },
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "📥 Waiting on You",
+      "emoji": true
+    }
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "3 PRs by next step, longest waiting first."
+      }
+    ]
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "Review · 2 · 1 overdue"
+      }
+    ]
+  },
+  {
+    "type": "rich_text",
+    "elements": [
+      {
+        "type": "rich_text_list",
+        "style": "bullet",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "link",
+                "url": "https://github.com/Kiln-AI/Kiln/pull/3",
+                "text": "Kiln - #3",
+                "style": {
+                  "bold": true
+                }
+              },
+              {
+                "type": "text",
+                "text": " Add the thing"
+              },
+              {
+                "type": "text",
+                "text": " · "
+              },
+              {
+                "type": "user",
+                "user_id": "UBOB"
+              },
+              {
+                "type": "text",
+                "text": " · "
+              },
+              {
+                "type": "text",
+                "text": "⏰ 2d 6h",
+                "style": {
+                  "bold": true
+                }
+              }
+            ]
+          },
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "link",
+                "url": "https://github.com/Kiln-AI/kiln_server/pull/1",
+                "text": "kiln_server - #1",
+                "style": {
+                  "bold": true
+                }
+              },
+              {
+                "type": "text",
+                "text": " Add the thing"
+              },
+              {
+                "type": "text",
+                "text": " · "
+              },
+              {
+                "type": "text",
+                "text": "stranger"
+              },
+              {
+                "type": "text",
+                "text": " · "
+              },
+              {
+                "type": "text",
+                "text": "5h"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "Fix CI · 1"
+      }
+    ]
+  },
+  {
+    "type": "rich_text",
+    "elements": [
+      {
+        "type": "rich_text_list",
+        "style": "bullet",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "link",
+                "url": "https://github.com/Kiln-AI/Kiln/pull/4",
+                "text": "Kiln - #4",
+                "style": {
+                  "bold": true
+                }
+              },
+              {
+                "type": "text",
+                "text": " Add the thing"
+              },
+              {
+                "type": "text",
+                "text": " · "
+              },
+              {
+                "type": "text",
+                "text": "2h"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "divider"
+  },
+  {
+    "type": "header",
+    "text": {
+      "type": "plain_text",
+      "text": "🚀 Your Open PRs",
+      "emoji": true
+    }
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "3 open, most action needed first."
+      }
+    ]
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "❌ CI failing · 1"
+      }
+    ]
+  },
+  {
+    "type": "rich_text",
+    "elements": [
+      {
+        "type": "rich_text_list",
+        "style": "bullet",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "link",
+                "url": "https://github.com/Kiln-AI/Kiln/pull/4",
+                "text": "Kiln - #4",
+                "style": {
+                  "bold": true
+                }
+              },
+              {
+                "type": "text",
+                "text": " Add the thing"
+              },
+              {
+                "type": "text",
+                "text": " · "
+              },
+              {
+                "type": "text",
+                "text": "2h"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "👀 Awaiting review · 1 · 1 overdue"
+      }
+    ]
+  },
+  {
+    "type": "rich_text",
+    "elements": [
+      {
+        "type": "rich_text_list",
+        "style": "bullet",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "link",
+                "url": "https://github.com/Kiln-AI/Kiln/pull/7",
+                "text": "Kiln - #7",
+                "style": {
+                  "bold": true
+                }
+              },
+              {
+                "type": "text",
+                "text": " Add the thing"
+              },
+              {
+                "type": "text",
+                "text": " · "
+              },
+              {
+                "type": "text",
+                "text": "waiting on "
+              },
+              {
+                "type": "user",
+                "user_id": "UBOB"
+              },
+              {
+                "type": "text",
+                "text": " · "
+              },
+              {
+                "type": "text",
+                "text": "⏰ 1d 6h",
+                "style": {
+                  "bold": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "context",
+    "elements": [
+      {
+        "type": "mrkdwn",
+        "text": "📝 Draft · 1"
+      }
+    ]
+  },
+  {
+    "type": "rich_text",
+    "elements": [
+      {
+        "type": "rich_text_list",
+        "style": "bullet",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "link",
+                "url": "https://github.com/Kiln-AI/Kiln/pull/5",
+                "text": "Kiln - #5",
+                "style": {
+                  "bold": true
+                }
+              },
+              {
+                "type": "text",
+                "text": " Add the thing"
+              },
+              {
+                "type": "text",
+                "text": " · "
+              },
+              {
+                "type": "text",
+                "text": "2w 2d"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

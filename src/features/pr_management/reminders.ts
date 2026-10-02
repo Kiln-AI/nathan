@@ -3,6 +3,7 @@ import { formatAge, weekendExcludedHours } from "../../core/time";
 import type { PRData } from "../../github";
 import { mention } from "../../slack";
 import { isReminded, type ReminderConfig } from "./config";
+import { prKey } from "./metrics";
 import { ensureCard, type PRContext } from "./refresh";
 import { type PRStatusState, STATE_INFO } from "./status";
 import type { PRRecord, ReminderState, SentReminder } from "./store";
@@ -166,4 +167,33 @@ async function ownerWaits(
     waits.push({ login, recipient, workingHours: weekendExcludedHours(since, now, tz) });
   }
   return waits;
+}
+
+/**
+ * Each PR's owners who are past its reminder threshold, by `prKey`: working hours in the current
+ * state, weekends excluded, in the time zone of whoever is told about them (the report's zone
+ * when nobody can be). PRs that never get reminders (drafts, merge queue) have no overdue owners.
+ * The daily report's Needs attention section and the personal queue's Overdue both use this rule;
+ * Needs attention additionally leaves Dependabot PRs to their own section, while the triager's
+ * queue counts them.
+ */
+export async function overdueOwners(
+  ctx: PRContext,
+  records: readonly PRRecord[],
+  now: DateTime,
+): Promise<Map<string, string[]>> {
+  const { config, people, services } = ctx;
+  const overdue = new Map<string, string[]>();
+  for (const record of records) {
+    if (!isReminded(record.state)) continue;
+    const threshold = thresholdHours(record.state, record.modifiers, config.reminders);
+    const owners: string[] = [];
+    for (const login of record.owners) {
+      const recipient = people.recipient(login);
+      const tz = recipient ? await services.directory.timezone(recipient) : config.report.timezone;
+      if (weekendExcludedHours(record.stateSince, now, tz) >= threshold) owners.push(login);
+    }
+    if (owners.length > 0) overdue.set(prKey(record), owners);
+  }
+  return overdue;
 }
