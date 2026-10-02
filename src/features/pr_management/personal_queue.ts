@@ -18,7 +18,7 @@ import {
   section,
   truncate,
 } from "../../slack";
-import { MAX_LISTED_TITLE } from "./card";
+import { MAX_LISTED_TITLE, REVIEWER_EMOJI } from "./card";
 import type { PRConfig } from "./config";
 import { prKey } from "./metrics";
 import type { People } from "./people";
@@ -364,19 +364,21 @@ function waitingRow(item: QueueItem, people: People, login: string, now: DateTim
   return row(item, now, author);
 }
 
-/** "Kiln - #12 Title · waiting on @reviewer · 3h"; nobody's named while it's on you. */
+/**
+ * "Kiln - #12 Title · waiting on @reviewer, ✅ @approver · 3h": reviewers who approved stay listed,
+ * checked. Nobody's waited on while it's on you, so then only the approvers are named.
+ */
 function mineRow(item: QueueItem, people: People, login: string, now: DateTime): RichTextElement[] {
-  const others = item.record.owners.filter((owner) => !sameLogin(login)(owner));
-  const waitingOn =
-    others.length === 0
-      ? []
-      : [
-          [
-            richText.text("waiting on "),
-            ...others.flatMap((owner, i) => [...(i > 0 ? [richText.text(", ")] : []), ...person(owner, people)]),
-          ],
-        ];
-  return row(item, now, waitingOn);
+  const { owners, approvers } = item.record;
+  const others = owners.filter((owner) => !sameLogin(login)(owner));
+  const approved = approvers.filter((approver) => !owners.some(sameLogin(approver)));
+  const names = [
+    ...others.map((owner) => person(owner, people)),
+    ...approved.map((approver) => [richText.text(`${REVIEWER_EMOJI.approved} `), ...person(approver, people)]),
+  ];
+  if (names.length === 0) return row(item, now, []);
+  const list = names.flatMap((name, i) => [...(i > 0 ? [richText.text(", ")] : []), ...name]);
+  return row(item, now, [[...(others.length > 0 ? [richText.text("waiting on ")] : []), ...list]]);
 }
 
 function row(item: QueueItem, now: DateTime, middle: RichTextElement[][]): RichTextElement[] {

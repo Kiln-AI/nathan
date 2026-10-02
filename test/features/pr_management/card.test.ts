@@ -1,6 +1,12 @@
 import { DateTime } from "luxon";
 import { describe, expect, it } from "vitest";
-import { type CardModel, ownersText, renderCard, reviewerLines } from "../../../src/features/pr_management/card";
+import {
+  approvers,
+  type CardModel,
+  ownersText,
+  renderCard,
+  reviewerLines,
+} from "../../../src/features/pr_management/card";
 import { aPR, aReview } from "../../builders/github";
 import { testPeople } from "../../helpers/pr";
 
@@ -117,5 +123,25 @@ describe("reviewerLines", () => {
 
   it("leaves out the author as a pending reviewer", () => {
     expect(reviewerLines(aPR({ pendingReviewers: ["alice"] }))).toEqual([]);
+  });
+});
+
+describe("approvers", () => {
+  it("keeps reviewers who approved after GitHub drops them from the requested reviewers", () => {
+    const pr = aPR({
+      pendingReviewers: ["joe"],
+      reviews: [
+        aReview({ author: "bob", state: "approved" }),
+        aReview({ author: "carol", state: "changes_requested" }),
+        aReview({ author: "alice", state: "approved" }),
+      ],
+    });
+    expect(approvers(pr)).toEqual(["bob"]);
+  });
+
+  it("leaves out a reviewer requested again after approving: they're pending again", () => {
+    const pr = aPR({ pendingReviewers: ["Bob"], reviews: [aReview({ author: "bob", state: "approved" })] });
+    expect(approvers(pr)).toEqual([]);
+    expect(reviewerLines(pr)).toEqual([{ login: "Bob", status: "pending" }]);
   });
 });

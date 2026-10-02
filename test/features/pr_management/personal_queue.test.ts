@@ -273,6 +273,31 @@ describe("renderHome", () => {
     );
   });
 
+  it("keeps reviewers who approved in the list, checked", () => {
+    const partly = aRecord({
+      number: 8,
+      author: "alice",
+      state: "awaiting_review",
+      owners: ["joe"],
+      approvers: ["bob", "outsider"],
+    });
+    expect(home("mine", "alice", [partly], new Map())).toContain(
+      "• <Kiln - #8> Add the thing · waiting on joe, ✅ @UBOB, ✅ outsider · 3d 23h",
+    );
+  });
+
+  it("names only the approvers, checked, once the PR is back with you", () => {
+    const approved = aRecord({ number: 8, author: "alice", state: "approved", owners: ["alice"], approvers: ["bob"] });
+    expect(home("mine", "alice", [approved], new Map())).toContain("• <Kiln - #8> Add the thing · ✅ @UBOB · 3d 23h");
+  });
+
+  it("doesn't check an approver the PR waits on again", () => {
+    const oss = aRecord({ number: 8, author: "alice", state: "approved", owners: ["Dan"], approvers: ["dan"] });
+    expect(home("mine", "alice", [oss], new Map())).toContain(
+      "• <Kiln - #8> Add the thing · waiting on @UDAN · 3d 23h",
+    );
+  });
+
   it(`shows at most ${MAX_GROUP_ROWS} rows per group and counts the rest`, () => {
     const many = Array.from({ length: MAX_GROUP_ROWS + 2 }, (_, i) =>
       aRecord({ number: i + 1, author: "bob", state: "awaiting_review", owners: ["alice"], stateSince: hoursAgo(1) }),

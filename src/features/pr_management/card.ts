@@ -40,7 +40,7 @@ export interface RenderedCard {
   blocks: MessageBlock[];
 }
 
-const REVIEWER_EMOJI: Record<ReviewerStatus, string> = {
+export const REVIEWER_EMOJI: Record<ReviewerStatus, string> = {
   pending: "⏳",
   approved: "✅",
   changes_requested: "🔁",
@@ -62,6 +62,13 @@ export function reviewerLines(pr: PRData): ReviewerLine[] {
     lines.push({ login: review.author, status: review.state });
   }
   return lines;
+}
+
+/** Reviewers who approved: a reviewer requested again is pending again, so isn't one. */
+export function approvers(pr: PRData): string[] {
+  return reviewerLines(pr)
+    .filter((line) => line.status === "approved")
+    .map((line) => line.login);
 }
 
 function pendingLine(login: string, team = false): ReviewerLine {
