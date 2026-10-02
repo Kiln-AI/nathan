@@ -4,6 +4,7 @@ import {
   FIELD,
   type FormInput,
   MESSAGES,
+  modifiersFromLabels,
   parsePullRequestUrl,
   readSubmission,
   requestModal,
@@ -52,6 +53,14 @@ async function errorsFor(input: FormInput, overrides: Parameters<typeof deps>[0]
   if (result.ok) throw new Error("expected errors");
   return result.errors;
 }
+
+describe("modifiersFromLabels", () => {
+  it("keeps the modifier labels, in any case, as the canonical names in form order", () => {
+    expect(modifiersFromLabels(["bug", "URGENT", "Quick", "large-ish"])).toEqual(["quick", "urgent"]);
+    expect(modifiersFromLabels(["urgent", "Urgent"])).toEqual(["urgent"]);
+    expect(modifiersFromLabels([])).toEqual([]);
+  });
+});
 
 describe("parsePullRequestUrl", () => {
   it.each([
