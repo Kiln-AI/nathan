@@ -186,7 +186,7 @@ There are two equivalent entry points, and both end in the same state: reviewers
 - Nathan never closes PRs.
 
 ### 4.9 Personal queue
-- **App Home tab** (primary). It refreshes when opened, and from a Refresh button next to Request PR that keeps the current tab. An "Updated" time, shown in the viewer's time zone, says when it was last rendered.
+- **App Home tab** (primary). It refreshes when opened, and from a Refresh button left of Request PR that keeps the current tab. The Refresh button's label shows when the tab was last rendered, in the viewer's time zone (e.g. "↻ Refresh · 2:41 PM").
   - **Stats**, each a big number with a breakdown underneath:
     - **Overdue**: unique PRs past their reminder threshold (§4.6), split into PRs waiting on you and your PRs waiting on someone else. It uses the same threshold rule as the daily report's Needs attention section, except that the triager's Overdue also counts Dependabot PRs, which Needs attention leaves to their own section.
     - **Waiting on you**: PRs where you're an owner, counted by your next action.
