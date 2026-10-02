@@ -28,6 +28,16 @@
               "__typename": "User",
               "login": "alice"
             },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "Urgent"
+                },
+                {
+                  "name": "bug"
+                }
+              ]
+            },
             "reviewRequests": {
               "nodes": [
                 {
@@ -163,6 +173,9 @@
               "__typename": "Bot",
               "login": "dependabot"
             },
+            "labels": {
+              "nodes": []
+            },
             "reviewRequests": {
               "nodes": []
             },
@@ -215,6 +228,9 @@
             "author": {
               "__typename": "User",
               "login": "bob"
+            },
+            "labels": {
+              "nodes": []
             },
             "reviewRequests": {
               "nodes": []

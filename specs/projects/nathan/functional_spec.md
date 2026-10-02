@@ -50,7 +50,7 @@ Off-the-shelf options (GitHub's Slack scheduled reminders, Axolo, Graphite, Line
 
 ### 3.4 Permissions and safety
 - GitHub access is via a GitHub App installed on the org with the narrowest workable permissions: Metadata read, Pull requests read & write, Checks read, Commit statuses read. Pull requests write is used only for the allow-listed operations. See [research](research/platform-stack/summary.md).
-- **GitHub write allow-list (V1):** request reviewers. That's the only write. Anything else is a code-review-gated change to the allow-list.
+- **GitHub write allow-list (V1):** request reviewers, and add labels (the request form's modifiers, §4.3). Nothing else. Anything more is a code-review-gated change to the allow-list.
 - Nathan never comments on GitHub in V1. This matters because OSS repos are public.
 - All inbound Slack requests and GitHub webhooks are signature-verified.
 - Secrets live in the host's secret store, never in the repo.
@@ -104,7 +104,7 @@ There are two equivalent entry points, and both end in the same state: reviewers
 - Opened from a **"Request PR" global shortcut**, a button on Nathan's App Home, or a button in the daily report. A global shortcut has no URL, so it can't be a channel bookmark (see [research](research/platform-stack/slack-app-framework/summary.md)). The UX matches today's workflow form.
 - Fields:
   - **PR link** (required)
-  - **Modifiers** (optional, multi-select): `quick`, `large`, `urgent`
+  - **Modifiers** (optional, multi-select): `quick`, `large`, `urgent`. Each is a GitHub label of the same name (see below).
   - **Reviewers** (required, 1+ Slack users)
   - **Note** (optional, free text)
 - The PR title is fetched from GitHub, not typed.
@@ -116,7 +116,8 @@ There are two equivalent entry points, and both end in the same state: reviewers
   - The submitter selected only themselves as reviewer (when they are the author).
   - The PR is a **draft**: "Mark it ready for review on GitHub first." Nathan never un-drafts PRs.
   - The PR title marks it **WIP**: "Title still says WIP. Update it on GitHub first."
-- On submit: Nathan requests the selected reviewers on GitHub (adding them to any already requested; it never removes anyone), then posts or updates the thread (§4.4).
+- On submit: Nathan requests the selected reviewers on GitHub (adding them to any already requested; it never removes anyone), adds the ticked modifiers as labels on the PR (never removing any), then posts or updates the thread (§4.4).
+- **Modifiers are GitHub labels.** A PR's modifiers are exactly its labels named `quick`, `large` or `urgent` (any case), however they got there. Nathan only adds them; removing a label on GitHub removes the modifier from the card, the reminders and the Home tab on the next refresh. A re-request with none ticked keeps the PR's labels.
 - If the submitter is not the PR author, that is allowed (e.g., a teammate posting on someone's behalf). The thread credits the submitter.
 
 **B. GitHub-originated**
@@ -128,7 +129,7 @@ There are two equivalent entry points, and both end in the same state: reviewers
 ### 4.4 The live CR thread
 - There is one top-level message in `#prs` per PR (the "card"). It shows:
   - repo and PR number, title (linked), author, additions/deletions
-  - modifiers as tags, and the note
+  - modifiers (the PR's modifier labels) as tags, and the note
   - reviewers with per-reviewer status (pending ⏳, approved ✅, changes requested 🔁, commented 💬)
   - current **state, next step and owner**
   - age
@@ -149,7 +150,7 @@ There are two equivalent entry points, and both end in the same state: reviewers
 
 ### 4.6 Stale reminders
 - **Staleness clock:** hours elapsed since the PR entered its current state and owner set. Weekend hours (Saturday and Sunday in the **owner's** Slack time zone) don't count, so tone doesn't escalate over a weekend nobody worked. Any state or owner change resets the clock and the escalation level.
-- **Threshold:** 24 hours (1 day) for all states. The `urgent` modifier shortens this to 4 hours. Thresholds are configurable per state.
+- **Threshold:** 24 hours (1 day) for all states. The `urgent` modifier (label) shortens this to 4 hours. Thresholds are configurable per state.
 - **Delivery:** an hourly sweep posts a threaded reply on the card, @-tagging each overdue owner. Reminders are sent as soon as they're due, at any time of day. Team policy is "send anytime, read when you're working", so there are no quiet hours.
 - **Repeat:** after the first reminder, the next is due after another full threshold interval, at an escalation level one higher.
 - **Tone escalation:** configurable message templates grouped by level (1, 2, 3, 4+). Each level has several variants, picked at random (avoiding the variant used last time on that PR) so it stays fresh. Level 1 is friendly, and later levels get progressively more pointed and humorous. The highest level repeats indefinitely. Every reminder states the next step and age.
@@ -245,7 +246,7 @@ There are two equivalent entry points, and both end in the same state: reviewers
 - Review load balancing / reviewer suggestions
 - Reminder snooze button (P2)
 - Any LLM-generated content
-- GitHub comments, labels, merges, closes and approvals
+- GitHub comments, labels (other than adding the modifiers, §4.3), merges, closes and approvals
 - Requiring more than one approval
 - Non-GitHub integrations (Sentry, PostHog, marketing)
 - Expanding GitHub team review requests

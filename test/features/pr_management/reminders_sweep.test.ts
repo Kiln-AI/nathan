@@ -109,7 +109,7 @@ describe("stale reminders", () => {
 
   it("reminds urgent PRs after 4 hours", async () => {
     const h = prApp();
-    h.github.upsert(aPR({ pendingReviewers: ["bob"] }));
+    h.github.upsert(aPR({ pendingReviewers: ["bob"], labels: ["urgent"] }));
     await h.runJob("post_review_request", {
       repo: REPO,
       number: 101,
@@ -129,6 +129,7 @@ describe("stale reminders", () => {
     const h = prApp();
     await seenAt(h, "2026-10-05T14:00:00Z", { pendingReviewers: ["bob"] });
     h.clock.set("2026-10-06T12:00:00Z");
+    h.github.upsert(aPR({ pendingReviewers: ["bob"], labels: ["urgent"] }));
     await h.runJob("post_review_request", {
       repo: REPO,
       number: 101,

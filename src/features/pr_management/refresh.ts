@@ -5,6 +5,7 @@ import { type CardModel, type RenderedCard, renderCard, reviewerLines } from "./
 import type { PRConfig } from "./config";
 import { describeHandoff } from "./handoff";
 import type { People } from "./people";
+import { modifiersFromLabels } from "./request_form";
 import { categorize, computeStatus, effectiveMergeable, isFinal, type PRStatusState, sameOwners } from "./status";
 import { type CardLocation, NO_DRAFT_NUDGES, NO_REMINDERS, type PREvent, type PRRecord, type PRStore } from "./store";
 
@@ -14,10 +15,11 @@ export interface PRSnapshot {
   readAt: DateTime;
 }
 
-/** What a Request PR form submission adds to the PR's record (spec §4.3A). */
+/**
+ * What a Request PR form submission adds to the PR's record (spec §4.3A). Its modifiers aren't
+ * here: they're GitHub labels, which the request job added before this refresh reads the PR.
+ */
 export interface RequestFields {
-  /** Empty keeps the modifiers from an earlier request. */
-  modifiers: string[];
   /** Null keeps the note from an earlier request. */
   note: string | null;
   /** Slack user ID of the submitter. */
@@ -116,7 +118,6 @@ function fromPullRequest(
   });
   const changed = !before || before.state !== status.state || !sameOwners(before.owners, status.owners);
   return {
-    modifiers: [],
     note: null,
     submittedBy: null,
     card: null,
@@ -131,6 +132,8 @@ function fromPullRequest(
     url: pr.url,
     author: pr.author,
     category,
+    // A cache of the labels: every read overwrites it, so a label removed on GitHub drops off.
+    modifiers: modifiersFromLabels(pr.labels),
     createdAt: pr.createdAt,
     isDraft: pr.isDraft,
     additions: pr.additions,
@@ -147,11 +150,9 @@ function fromPullRequest(
 
 function withRequest(record: PRRecord, request: RequestFields | undefined): PRRecord {
   if (!request) return record;
-  // A re-request that leaves a field empty keeps the earlier request's value, so forgetting to
-  // tick `urgent` again doesn't quietly relax the reminders.
+  // A re-request without a note keeps the earlier request's.
   return {
     ...record,
-    modifiers: request.modifiers.length > 0 ? request.modifiers : record.modifiers,
     note: request.note ?? record.note,
     submittedBy: request.submittedBy,
   };

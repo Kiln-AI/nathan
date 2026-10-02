@@ -114,6 +114,15 @@ export class ReviewersRequestedError extends Error {
   }
 }
 
+/** GitHub accepted the reviewers, but adding the modifiers' labels failed. */
+export class LabelsNotAddedError extends Error {
+  override name = "LabelsNotAddedError";
+
+  constructor(readonly reason: unknown) {
+    super(`Reviewers were requested, but the labels couldn't be added: ${errorMessage(reason)}`);
+  }
+}
+
 /** GitHub turned the request down, but telling the submitter failed. */
 export class RejectionNotDeliveredError extends Error {
   override name = "RejectionNotDeliveredError";
@@ -127,15 +136,17 @@ export class RejectionNotDeliveredError extends Error {
 }
 
 /**
- * The `request_review` job: adds the reviewers on GitHub (never removing anyone), then hands over to
- * Slack. Failures after the GitHub call are marked, so the give-up DM says what GitHub did.
+ * The `request_review` job: adds the reviewers on GitHub (never removing anyone), then the
+ * modifiers as labels (never removing any), then hands over to Slack. Both writes add, so a retry
+ * redoes them harmlessly. Failures after the reviewers are marked, so the give-up DM says what
+ * GitHub did. Labels GitHub turns down don't stop the request: the card shows the PR's labels.
  */
 export async function requestReviewers(ctx: PRContext, post: JobRef<ReviewRequest>, request: ReviewRequest) {
   const { services } = ctx;
   try {
     await services.github.writer.requestReviewers(request.repo, request.number, request.reviewers);
   } catch (error) {
-    if (!(error instanceof GitHubApiError && REJECTED_STATUSES.has(error.status))) throw error;
+    if (!isRejection(error)) throw error;
     services.log.warn("GitHub rejected a review request", { request, error });
     try {
       await tellSubmitter(ctx, request, githubRejectedText(request, error));
@@ -144,11 +155,29 @@ export async function requestReviewers(ctx: PRContext, post: JobRef<ReviewReques
     }
     return;
   }
+  let labelsRejection: GitHubApiError | null = null;
+  try {
+    await services.github.writer.addLabels(request.repo, request.number, request.modifiers);
+  } catch (error) {
+    if (!isRejection(error)) throw new LabelsNotAddedError(error);
+    services.log.warn("GitHub rejected a review request's labels", { request, error });
+    labelsRejection = error;
+  }
   try {
     await services.enqueue(post, request);
   } catch (error) {
     throw new ReviewersRequestedError(error);
   }
+  // After the hand-over, so a retry doesn't send it twice. The request went ahead, so a lost DM
+  // isn't worth a retry.
+  if (labelsRejection)
+    await tellSubmitter(ctx, request, labelsRejectedText(request, labelsRejection)).catch((error: unknown) =>
+      services.log.warn("Couldn't tell the submitter their labels were turned down", { request, error }),
+    );
+}
+
+function isRejection(error: unknown): error is GitHubApiError {
+  return error instanceof GitHubApiError && REJECTED_STATUSES.has(error.status);
 }
 
 /**
@@ -161,7 +190,7 @@ export async function postReviewRequest(ctx: PRContext, request: ReviewRequest):
   const existingCard = (await store.get(repo, number))?.card;
   const readAt = services.clock.now();
   const pr = await services.github.reader.pullRequest(repo, number);
-  const fields = { modifiers: request.modifiers, note: request.note, submittedBy: request.submittedBy };
+  const fields = { note: request.note, submittedBy: request.submittedBy };
   await refreshPullRequest(ctx, repo, number, pr ? { pr, readAt } : undefined, fields);
   // No re-request reply on a PR that can't be reviewed any more; the card update is enough.
   if (!existingCard || !pr || pr.state !== "open" || pr.isDraft) return;
@@ -219,6 +248,7 @@ export function githubRejectedText(request: ReviewRequest, error: unknown): stri
 /** The `request_review` give-up DM, saying how far the request got. */
 export function requestGaveUpText(request: ReviewRequest, channel: string, error: unknown): string {
   if (error instanceof ReviewersRequestedError) return slackGaveUpText(request, channel, error.reason);
+  if (error instanceof LabelsNotAddedError) return labelsGaveUpText(request, channel, error.reason);
   if (error instanceof RejectionNotDeliveredError) return githubRejectedText(request, error.rejection);
   return githubGaveUpText(request, error);
 }
@@ -231,5 +261,20 @@ export function slackGaveUpText(request: ReviewRequest, channel: string, error: 
   return (
     `I requested the reviews on ${prLink(request)} on GitHub, but couldn't post it in ${channelLink(channel)} (${detail(error)}).\n` +
     "The hourly sweep will bring its card up to date."
+  );
+}
+
+function labelList(request: ReviewRequest): string {
+  return request.modifiers.map((modifier) => `\`${modifier}\``).join(", ");
+}
+
+export function labelsRejectedText(request: ReviewRequest, error: unknown): string {
+  return `I requested the reviews on ${prLink(request)}, but GitHub wouldn't add the labels ${labelList(request)}: ${detail(error)}\nAdd them on GitHub if you still want them.`;
+}
+
+export function labelsGaveUpText(request: ReviewRequest, channel: string, error: unknown): string {
+  return (
+    `I requested the reviews on ${prLink(request)} on GitHub, but couldn't add the labels ${labelList(request)} (${detail(error)}), so I didn't post it in ${channelLink(channel)}.\n` +
+    "Add the labels on GitHub; the hourly sweep will bring its card up to date."
   );
 }

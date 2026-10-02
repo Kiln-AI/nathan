@@ -158,6 +158,7 @@ describe("Request PR: a first request", () => {
     await drain(h);
 
     expect(h.github.reviewerRequests).toEqual([{ repo: REPO, number: 101, logins: ["carol"] }]);
+    expect(h.github.labelRequests).toEqual([{ repo: REPO, number: 101, labels: ["quick", "urgent"] }]);
     expect(h.slack.posts).toHaveLength(1);
     const [card] = h.slack.posts;
     expect(card?.channel).toBe(PR_CHANNEL);
@@ -177,14 +178,25 @@ describe("Request PR: a first request", () => {
     });
   });
 
+  it("shows the PR's existing modifier labels on the card, whatever their case", async () => {
+    const h = prApp();
+    h.github.upsert(aPR({ labels: ["Large", "bug"] }));
+    await submit(h);
+    await drain(h);
+    expect(h.github.labelRequests).toEqual([]);
+    expect(await h.record(101)).toMatchObject({ modifiers: ["large"] });
+    expect(JSON.stringify(h.slack.posts[0]?.blocks)).toContain("`large`");
+  });
+
   it("in dry run, writes nothing to GitHub but still posts the card to the test channel", async () => {
     const config = prConfig();
     config.environments = { development: { dryRun: true, testChannel: "CTEST" } };
     const h = prApp({ config });
     h.github.upsert(aPR());
-    await submit(h);
+    await submit(h, { modifiers: ["urgent"] });
     await drain(h);
     expect(h.github.reviewerRequests).toEqual([]);
+    expect(h.github.labelRequests).toEqual([]);
     expect(h.slack.posts.map((post) => post.channel)).toEqual(["CTEST"]);
   });
 });
@@ -246,7 +258,7 @@ describe("Request PR: a re-request", () => {
     expect(threadReplies(h)).toEqual([]);
   });
 
-  it("keeps the earlier modifiers when a re-request ticks none, and replaces them when it ticks some", async () => {
+  it("adds a re-request's modifiers to the PR's labels, never removing any", async () => {
     const h = prApp();
     h.github.upsert(aPR());
     await submit(h, { modifiers: ["urgent"] });
@@ -257,7 +269,21 @@ describe("Request PR: a re-request", () => {
 
     await submit(h, { modifiers: ["quick"] });
     await drain(h);
+    expect(h.github.labelRequests.map((write) => write.labels)).toEqual([["urgent"], ["quick"]]);
+    expect(await h.record(101)).toMatchObject({ modifiers: ["quick", "urgent"] });
+  });
+
+  it("drops a modifier once its label is removed on GitHub", async () => {
+    const h = prApp();
+    h.github.upsert(aPR());
+    await submit(h, { modifiers: ["quick", "urgent"] });
+    await drain(h);
+    const pr = h.github.prs[0];
+    h.github.upsert({ ...aPR(), pendingReviewers: pr?.pendingReviewers ?? [], labels: ["quick"] });
+    h.clock.advance({ minutes: 5 });
+    await h.refresh(101);
     expect(await h.record(101)).toMatchObject({ modifiers: ["quick"] });
+    expect(JSON.stringify(h.slack.updates.at(-1)?.blocks)).not.toContain("`urgent`");
   });
 
   it("doesn't reply when the PR is no longer open", async () => {
@@ -290,6 +316,54 @@ describe("Request PR: failures", () => {
     expect(h.slack.dms[0]?.userId).toBe("UALICE");
     expect(h.slack.dms[0]?.message.text).toContain("Reviews may only be requested from collaborators.");
     expect(h.slack.dms[0]?.message.text).toContain("Nothing was requested");
+  });
+
+  it("doesn't add the labels when GitHub turns the reviewers down", async () => {
+    const h = prApp();
+    h.github.upsert(aPR());
+    vi.spyOn(h.github.writer, "requestReviewers").mockRejectedValue(new GitHubApiError("Not a collaborator.", 422));
+    await h.runJob("request_review", request({ modifiers: ["urgent"] }));
+    expect(h.github.labelRequests).toEqual([]);
+  });
+
+  it("goes ahead without the labels GitHub turns down, and tells the submitter", async () => {
+    const h = prApp();
+    h.github.upsert(aPR());
+    vi.spyOn(h.github.writer, "addLabels").mockRejectedValue(new GitHubApiError("Resource not accessible.", 403));
+    expect(await h.runJob("request_review", request({ modifiers: ["quick", "urgent"] }))).toEqual({ kind: "ack" });
+    expect(h.queue.jobNames()).toEqual(["pr_management.post_review_request"]);
+    expect(h.slack.dms[0]?.message.text).toMatch(
+      /requested the reviews on .*, but GitHub wouldn't add the labels `quick`, `urgent`: Resource not accessible\.\nAdd them on GitHub/,
+    );
+  });
+
+  it("still hands over to Slack when the labels-rejected DM fails", async () => {
+    const h = prApp();
+    h.github.upsert(aPR());
+    vi.spyOn(h.github.writer, "addLabels").mockRejectedValue(new GitHubApiError("Validation failed.", 422));
+    vi.spyOn(h.slack, "sendDirectMessage").mockRejectedValue(new Error("im_disabled"));
+    expect(await h.runJob("request_review", request({ modifiers: ["urgent"] }))).toEqual({ kind: "ack" });
+    expect(h.queue.jobNames()).toEqual(["pr_management.post_review_request"]);
+    expect(h.log.at("warn").map((entry) => entry.msg)).toContain(
+      "Couldn't tell the submitter their labels were turned down",
+    );
+  });
+
+  it("retries when the labels fail, and on give-up says the reviewers were requested but the labels weren't added", async () => {
+    const h = prApp();
+    h.github.upsert(aPR());
+    vi.spyOn(h.github.writer, "addLabels").mockRejectedValue(new Error("socket hang up"));
+    expect((await h.runJob("request_review", request({ modifiers: ["urgent"] }))).kind).toBe("retry");
+    expect(await h.runJob("request_review", request({ modifiers: ["urgent"] }), 3)).toEqual({ kind: "ack" });
+    expect(h.queue.sent).toEqual([]);
+    expect(h.github.reviewerRequests).toHaveLength(2);
+    const text = h.slack.dms[0]?.message.text ?? "";
+    expect(text).toMatch(
+      new RegExp(
+        `requested the reviews on .* on GitHub, but couldn't add the labels \`urgent\` \\(socket hang up\\), so I didn't post it in <#${PR_CHANNEL}>`,
+      ),
+    );
+    expect(text).not.toContain("Nothing was requested");
   });
 
   it("retries when the rejection DM fails, and on give-up still says GitHub turned it down", async () => {
