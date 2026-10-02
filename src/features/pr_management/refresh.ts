@@ -1,10 +1,11 @@
 import { DateTime } from "luxon";
 import type { Services } from "../../core/feature";
 import type { PRData } from "../../github";
-import { type CardModel, type RenderedCard, renderCard, reviewerLines } from "./card";
+import { type CardModel, type RenderedCard, renderCard } from "./card";
 import type { PRConfig } from "./config";
 import { describeHandoff } from "./handoff";
 import type { People } from "./people";
+import { reviewerLines } from "./reviewers";
 import { categorize, computeStatus, effectiveMergeable, isFinal, type PRStatusState, sameOwners } from "./status";
 import { type CardLocation, NO_DRAFT_NUDGES, NO_REMINDERS, type PREvent, type PRRecord, type PRStore } from "./store";
 

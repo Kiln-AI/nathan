@@ -1,7 +1,6 @@
 import { DateTime } from "luxon";
 import { describe, expect, it } from "vitest";
-import { type CardModel, ownersText, renderCard, reviewerLines } from "../../../src/features/pr_management/card";
-import { aPR, aReview } from "../../builders/github";
+import { type CardModel, ownersText, renderCard } from "../../../src/features/pr_management/card";
 import { testPeople } from "../../helpers/pr";
 
 const NOW = DateTime.fromISO("2026-10-05T14:00:00Z", { zone: "utc" });
@@ -91,36 +90,5 @@ describe("renderCard", () => {
     const card = render({ title: "Fix <script> & stuff", reviewers: [], note: null });
     expect(card.text).toBe("Kiln-AI/Kiln#101 Fix &lt;script&gt; &amp; stuff: Awaiting review");
     expect(card.blocks).toHaveLength(4);
-  });
-});
-
-describe("reviewerLines", () => {
-  it("lists pending people, then teams, then everyone else's latest review", () => {
-    const pr = aPR({
-      pendingReviewers: ["bob"],
-      pendingTeams: ["core"],
-      reviews: [
-        aReview({ author: "bob", state: "changes_requested" }),
-        aReview({ author: "carol", state: "approved" }),
-        aReview({ author: "dan", state: "commented" }),
-        aReview({ author: "erin", state: "dismissed" }),
-        aReview({ author: "alice", state: "commented" }),
-      ],
-    });
-    expect(reviewerLines(pr)).toEqual([
-      { login: "bob", status: "pending" },
-      { login: "core", status: "pending", team: true },
-      { login: "carol", status: "approved" },
-      { login: "dan", status: "commented" },
-    ]);
-  });
-
-  it("leaves out the author as a pending reviewer", () => {
-    expect(reviewerLines(aPR({ pendingReviewers: ["alice"] }))).toEqual([]);
-  });
-
-  it("shows a reviewer requested again after reviewing as pending", () => {
-    const pr = aPR({ pendingReviewers: ["Bob"], reviews: [aReview({ author: "bob", state: "approved" })] });
-    expect(reviewerLines(pr)).toEqual([{ login: "Bob", status: "pending" }]);
   });
 });

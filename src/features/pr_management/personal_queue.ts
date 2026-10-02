@@ -18,12 +18,13 @@ import {
   section,
   truncate,
 } from "../../slack";
-import { MAX_LISTED_TITLE, REVIEWER_EMOJI, type ReviewerLine } from "./card";
+import { MAX_LISTED_TITLE, REVIEWER_EMOJI } from "./card";
 import type { PRConfig } from "./config";
 import { prKey } from "./metrics";
 import type { People } from "./people";
 import type { PRContext } from "./refresh";
 import { overdueOwners } from "./reminders";
+import type { ReviewerLine } from "./reviewers";
 import { isFinal, type PRStatusState, STATE_INFO } from "./status";
 import type { PRRecord } from "./store";
 

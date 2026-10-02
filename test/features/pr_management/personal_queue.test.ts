@@ -24,7 +24,7 @@ import type { PRRecord } from "../../../src/features/pr_management/store";
 import { type HomeBlock, type MessageBlock, section } from "../../../src/slack";
 import { aPR } from "../../builders/github";
 import { aRecord } from "../../builders/pr_record";
-import { type PRTestApp, prApp, testPeople } from "../../helpers/pr";
+import { type PRTestApp, prApp, REPO, testPeople } from "../../helpers/pr";
 import { appHomeOpenedBody, blockActionBody, commandBody, signedSlackRequest } from "../../helpers/slack";
 
 const at = (iso: string) => DateTime.fromISO(iso, { zone: "utc" });
@@ -315,6 +315,21 @@ describe("renderHome", () => {
     );
   });
 
+  it("names an owner who has already reviewed once, by their review", () => {
+    // An oss PR (alice wasn't mapped when it was refreshed) that dan, the triager, approved and now owns.
+    const approvedByOwner = aRecord({
+      number: 8,
+      author: "alice",
+      category: "oss",
+      state: "approved",
+      owners: ["Dan"],
+      reviewers: [{ login: "dan", status: "approved" }],
+    });
+    expect(home("mine", "alice", [approvedByOwner], new Map())).toContain(
+      "• <Kiln - #8> Add the thing · ✅ @UDAN · 3d 23h",
+    );
+  });
+
   it("names nobody when there are no reviewers and it's on you", () => {
     const yours = aRecord({ number: 8, author: "alice", state: "ci_failing", owners: ["alice"] });
     expect(home("mine", "alice", [yours], new Map())).toContain("• <Kiln - #8> Add the thing · 3d 23h");
@@ -416,6 +431,20 @@ describe("App Home and /nathan prs", () => {
     expect(shown).toContain("1 waiting on you · 1 of your PRs, waiting on others · oldest 1d 2h");
     expect(shown).toContain("• <Kiln - #1> Add the thing · @UBOB · *⏰ 1d 2h*");
     expect(shown).toContain("• <Kiln - #2> Add the thing · ⏳ @UCAROL · *⏰ 1d 2h*");
+  });
+
+  it("still shows the queue when a stored reviewer list can't be read", async () => {
+    const h = await withPRs();
+    const setReviewers = (number: number, json: string) =>
+      h.app.services.db.run("UPDATE pr_prs SET reviewers = ? WHERE repo = ? AND number = ?", json, REPO, number);
+    await setReviewers(1, "{not json");
+    await setReviewers(2, '[{"login":"carol","status":"snoozed"},{"login":"bob","status":"approved"}]');
+
+    await send(h, appHomeOpenedBody("UALICE"), "application/json");
+
+    const shown = lines(h.slack.homes.at(-1)?.view.blocks ?? []);
+    expect(shown).toContain("# 📥 1 Waiting on You");
+    expect(shown.find((line) => line.includes("<Kiln - #2>"))).toContain(" · @UCAROL, ✅ @UBOB · ");
   });
 
   it("refreshes from the App Home's Refresh button, keeping the tab", async () => {

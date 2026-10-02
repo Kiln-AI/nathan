@@ -139,6 +139,29 @@ describe("toLatestReviews", () => {
     ]);
   });
 
+  it("takes the comment a reviewer left after their approval was dismissed", () => {
+    // As GitHub returns it: the dismissed approval is in neither list once the reviewer comments.
+    const reviews = toLatestReviews([], [review("bob", "COMMENTED", "2026-10-01T16:00:00Z")]);
+    expect(reviews.map((r) => [r.author, r.state])).toEqual([["bob", "commented"]]);
+  });
+
+  it("doesn't let a dismissed review in the opinionated list hide a later review", () => {
+    const reviews = toLatestReviews(
+      [review("bob", "DISMISSED", "2026-10-01T14:00:00Z"), review("carol", "APPROVED", "2026-10-01T14:00:00Z")],
+      [review("bob", "COMMENTED", "2026-10-01T16:00:00Z"), review("carol", "APPROVED", "2026-10-01T14:00:00Z")],
+    );
+    expect(reviews.map((r) => [r.author, r.state])).toEqual([
+      ["carol", "approved"],
+      ["bob", "commented"],
+    ]);
+  });
+
+  it("keeps a dismissed review when the reviewer did nothing after it", () => {
+    // As GitHub returns it: only `latestReviews` has the dismissed review.
+    const reviews = toLatestReviews([], [review("bob", "DISMISSED", "2026-10-01T14:00:00Z")]);
+    expect(reviews.map((r) => [r.author, r.state])).toEqual([["bob", "dismissed"]]);
+  });
+
   it("keeps dismissed reviews and drops unsubmitted and unknown ones", () => {
     const reviews = toLatestReviews(
       [review("erin", "DISMISSED", "2026-10-01T14:00:00Z")],

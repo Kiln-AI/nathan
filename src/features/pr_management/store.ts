@@ -1,7 +1,7 @@
 import { DateTime } from "luxon";
 import type { Db, SqlParam } from "../../core/db";
 import type { Mergeable } from "../../github";
-import type { ReviewerLine } from "./card";
+import { decodeReviewers, type ReviewerLine } from "./reviewers";
 import type { PRCategory, PRStatusState } from "./status";
 
 /** Nathan's own facts about a PR (architecture §6: D1 is authoritative only for these). */
@@ -415,7 +415,7 @@ function toRecord(row: PRRow): PRRecord {
     mergeable: row.mergeable as Mergeable,
     state: row.state as PRStatusState,
     owners: JSON.parse(row.owners) as string[],
-    reviewers: JSON.parse(row.reviewers) as ReviewerLine[],
+    reviewers: decodeReviewers(row.reviewers),
     stateSince: at(row.state_since),
     draftSince: row.draft_since === null ? null : at(row.draft_since),
     modifiers: JSON.parse(row.modifiers) as string[],

@@ -1,21 +1,11 @@
 import type { DateTime } from "luxon";
-import { normalizeGithubLogin } from "../../core/directory";
 import { formatAge } from "../../core/time";
-import type { PRData } from "../../github";
 import { context, escapeText, link, type MessageBlock, mention, section, truncate } from "../../slack";
 import type { People } from "./people";
+import type { ReviewerLine, ReviewerStatus } from "./reviewers";
 import { type PRStatusState, STATE_INFO } from "./status";
 
 // The live card (spec §4.4): one top-level message per PR in the PR channel, edited in place.
-
-export type ReviewerStatus = "pending" | "approved" | "changes_requested" | "commented";
-
-export interface ReviewerLine {
-  /** A GitHub login, or a team slug when `team` is set. */
-  login: string;
-  status: ReviewerStatus;
-  team?: boolean;
-}
 
 export interface CardModel {
   repo: string;
@@ -46,27 +36,6 @@ export const REVIEWER_EMOJI: Record<ReviewerStatus, string> = {
   changes_requested: "🔁",
   commented: "💬",
 };
-
-/** Pending reviewers (people, then teams), then everyone else's latest review. Dismissed reviews and the author's own are left out. */
-export function reviewerLines(pr: PRData): ReviewerLine[] {
-  const isAuthor = (login: string) => normalizeGithubLogin(login) === normalizeGithubLogin(pr.author);
-  const pending = new Set(pr.pendingReviewers.map(normalizeGithubLogin));
-  const lines: ReviewerLine[] = [
-    ...pr.pendingReviewers.filter((login) => !isAuthor(login)).map((login) => pendingLine(login)),
-    ...pr.pendingTeams.map((slug) => pendingLine(slug, true)),
-  ];
-  for (const review of pr.reviews) {
-    if (review.state === "dismissed" || isAuthor(review.author) || pending.has(normalizeGithubLogin(review.author))) {
-      continue;
-    }
-    lines.push({ login: review.author, status: review.state });
-  }
-  return lines;
-}
-
-function pendingLine(login: string, team = false): ReviewerLine {
-  return team ? { login, status: "pending", team } : { login, status: "pending" };
-}
 
 export function renderCard(model: CardModel, people: People, now: DateTime): RenderedCard {
   const info = STATE_INFO[model.state];
