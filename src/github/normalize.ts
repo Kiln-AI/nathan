@@ -148,10 +148,7 @@ export function toPRHistory(repo: string, raw: RawPullRequestHistory): PRHistory
     mergedAt: optionalTime(raw.mergedAt),
     closedAt: optionalTime(raw.closedAt),
     lastReadyForReviewAt: optionalTime(raw.timelineItems.nodes.at(-1)?.createdAt ?? null),
-    reviews: compact(raw.reviews.nodes)
-      .map(toReview)
-      .filter((review): review is Review => review !== null)
-      .sort((a, b) => a.submittedAt.toMillis() - b.submittedAt.toMillis()),
+    reviews: toReviews(raw.reviews.nodes).sort((a, b) => a.submittedAt.toMillis() - b.submittedAt.toMillis()),
   };
 }
 
@@ -200,16 +197,26 @@ function toReview(raw: RawReview): Review | null {
 }
 
 /**
- * The latest review per reviewer. `latestOpinionatedReviews` keeps an approval or change request
- * even after the reviewer comments again; `latestReviews` adds reviewers who only commented.
+ * The review that stands per reviewer. As observed on the live API (the schema docs don't say):
+ * `latestOpinionatedReviews` holds each reviewer's latest approval or change request, which outlasts
+ * a later comment, and leaves dismissed reviews out; `latestReviews` holds each reviewer's latest
+ * review whatever its state, dismissed included. A dismissed review in the opinionated list is still
+ * ranked below `latestReviews`, so it can never hide a review the reviewer left after the dismissal.
  */
 export function toLatestReviews(opinionated: (RawReview | null)[], latest: (RawReview | null)[]): Review[] {
+  const opinions = toReviews(opinionated);
+  const standingOpinions = opinions.filter((review) => review.state !== "dismissed");
   const byAuthor = new Map<string, Review>();
-  for (const raw of [...compact(opinionated), ...compact(latest)]) {
-    const review = toReview(raw);
-    if (review && !byAuthor.has(review.author)) byAuthor.set(review.author, review);
+  for (const review of [...standingOpinions, ...toReviews(latest), ...opinions]) {
+    if (!byAuthor.has(review.author)) byAuthor.set(review.author, review);
   }
   return [...byAuthor.values()];
+}
+
+function toReviews(raws: (RawReview | null)[]): Review[] {
+  return compact(raws)
+    .map(toReview)
+    .filter((review): review is Review => review !== null);
 }
 
 const FAILING_CONCLUSIONS = new Set(["FAILURE", "TIMED_OUT", "CANCELLED", "STARTUP_FAILURE", "ACTION_REQUIRED"]);
