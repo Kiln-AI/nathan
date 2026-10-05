@@ -1,3 +1,5 @@
+<img width="64" height="64" alt="12236640444448_5c07953571a6f3757f1c_512" src="https://github.com/user-attachments/assets/31660747-b543-42be-94ad-1e4183833072" />
+
 # nathan
 
 Our Slack bot: a small Cloudflare Worker (TypeScript) for deterministic team automation. Specs live in `specs/projects/nathan/`.
