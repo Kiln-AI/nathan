@@ -236,7 +236,7 @@ The component docs have the details.
 Slack shortcut ──► /slack/events ─ ack: views.open(modal) ───────────────────────────► user sees form
 Modal submit   ──► /slack/events ─ ack: validate (≤2.2s: config + GitHub GET PR) ─┬─► inline errors
                                                                                    └─► enqueue pr_management.request_review
-Queue          ──► request_review: GitHub requestReviewers ► refresh PR ► post/update card ► (DM on give-up)
+Queue          ──► request_review: GitHub requestReviewers, addLabels ► refresh PR ► post/update card ► (DM on give-up)
 GitHub webhook ──► /github/webhooks ─ verify ► dedupe ► pr handler: record pr_events, debounce(refresh, 60s) ► 202
 Queue (60s)    ──► refresh PR: fetch ► computeStatus ► diff vs stored ► card update / create ► handoff reply
 Cron (hourly)  ──► sweep: fetch all open PRs ► refresh each ► reminders ► draft nudges ► finalize vanished PRs
@@ -245,8 +245,8 @@ app_home_opened / `/nathan prs` ──► lazy: read pr_prs from D1 ► views.pu
 ```
 
 There are two sources of truth:
-- **GitHub is authoritative for PR state.** Nathan recomputes from GitHub rather than applying event payloads, and the hourly sweep heals anything that was missed.
-- **D1 is authoritative only for Nathan's own facts:** card location, modifiers and note, reminder level, last nudge, and the last computed status (needed to detect handoffs).
+- **GitHub is authoritative for PR state**, including the modifiers, which are the PR's `quick`/`large`/`urgent` labels. Nathan recomputes from GitHub rather than applying event payloads, and the hourly sweep heals anything that was missed. D1's `modifiers` column is a cache of the labels from the last read, overwritten on every refresh.
+- **D1 is authoritative only for Nathan's own facts:** card location, note and submitter, reminder level, last nudge, and the last computed status (needed to detect handoffs).
 
 ## 7. Error Handling Strategy
 
@@ -265,7 +265,7 @@ There are two sources of truth:
 ## 8. Security
 
 - **GitHub App permissions:** Metadata R, Pull requests R/W, Checks R, Commit statuses R, Contents R (private repos: a PR's commits, and so its CI, are unreadable without it). Subscribed events: `pull_request`, `pull_request_review`, `check_run`, `status`.
-- **The only GitHub write path is `GitHubWriter.requestReviewers`.** The Octokit instance is module-private to `src/github/`. The reader exposes only typed query functions, and its GraphQL helper rejects any document containing `mutation`. A unit test asserts the writer's public surface is exactly `{ requestReviewers }`.
+- **The only GitHub write paths are `GitHubWriter.requestReviewers` and `GitHubWriter.addLabels`** (both add, never remove). The Octokit instance is module-private to `src/github/`. The reader exposes only typed query functions, and its GraphQL helper rejects any document containing `mutation`. A unit test asserts the writer's public surface is exactly `{ requestReviewers, addLabels }`.
 - **Private key:** stored as a PKCS#8 PEM in the secret `GITHUB_APP_PRIVATE_KEY`. `docs/setup.md` gives the conversion command (`openssl pkcs8 -topk8 -nocrypt -in key.pem -out key.pk8.pem`). At startup the key header is checked, and a PKCS#1 header (`BEGIN RSA PRIVATE KEY`) throws a clear error.
 - **Secrets** are set with `wrangler secret put` per environment: `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET`, `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_INSTALLATION_ID`, `GITHUB_WEBHOOK_SECRET`. An empty or missing secret throws at startup.
 - **Slack bot scopes:** `commands`, `chat:write`, `users:read`, `reactions:write`, `im:write`. Nathan must be invited to `#prs`; it doesn't use `chat:write.public`.
@@ -286,7 +286,7 @@ There are two sources of truth:
 - **Runner:** Vitest with `@cloudflare/vitest-pool-workers`, so tests run inside workerd with real D1, KV and Queues in Miniflare. Migrations are applied in `beforeAll`.
 - **Fakes, not HTTP mocks:**
   - `FakeSlack` implements `SlackClient` and records calls (posts, updates, views, DMs) with message ts generation.
-  - `FakeGitHub` implements `GitHubGateway` from in-memory PR fixtures, and records `requestReviewers` calls.
+  - `FakeGitHub` implements `GitHubGateway` from in-memory PR fixtures, and records `requestReviewers` and `addLabels` calls.
   - `FakeClock` provides time.
   - Features are tested through `core/app.ts` with fakes injected via a `createApp(env, overrides)` seam.
 - **Fixture builders:** `aPR({ ...overrides })` builds normalized `PRData`, and `aReview`, `aCheck` and others build the parts.

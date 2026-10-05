@@ -120,12 +120,12 @@ For each environment:
      | Permission | Access | Used for |
      |---|---|---|
      | Metadata | Read | Required by every App |
-     | Pull requests | Read & write | Reading PRs, reviews and review requests; **write is only used to request reviewers** |
+     | Pull requests | Read & write | Reading PRs, reviews, review requests and labels; **write is only used to request reviewers and add the `quick`, `large` and `urgent` labels** (GitHub creates a label the first time it's added) |
      | Checks | Read | CI check runs |
      | Commit statuses | Read | CI from external services (commit statuses) |
      | Contents | Read | A PR's head commit and its CI in **private** repos (public repos work without it) |
 
-   - **Subscribe to events:** Pull request, Pull request review, Check run, Status. (Merge queues need nothing more: entering and leaving one are Pull request events, and the queue state is read with Pull requests read.)
+   - **Subscribe to events:** Pull request, Pull request review, Check run, Status. (Merge queues and labels need nothing more: entering and leaving a queue, and labelling or unlabelling a PR, are Pull request events, read with Pull requests read.)
    - **Where can this GitHub App be installed?** Only on this account.
 3. After creating it, note the **App ID** on the App's page. Under **Private keys**, click **Generate a private key**; a `.pem` file downloads.
 4. Convert the key to PKCS#8. GitHub hands out PKCS#1 (`-----BEGIN RSA PRIVATE KEY-----`), but Workers' Web Crypto only reads PKCS#8 (`-----BEGIN PRIVATE KEY-----`). Nathan refuses to start with a PKCS#1 key.
@@ -201,7 +201,7 @@ Before starting: steps 1–7 done for staging, `npm run verify:github -- staging
 
 - [ ] The "Request PR review (staging)" shortcut (composer **+** → shortcuts, or search for it) opens the form within a second or two, and so does the Home tab's **Request PR** button.
 - [ ] Each validation error shows inline on its field: a non-PR link, a PR in an untracked repo, a closed PR, a draft, a "WIP" title, a reviewer missing from `users`, and choosing only yourself on your own PR.
-- [ ] A valid submission posts a card to the test channel, crediting you, with the modifiers and note. The log line "dry run: would request reviewers" stands in for the GitHub write (`npx wrangler tail --env staging`), so request the same reviewers on GitHub by hand to continue.
+- [ ] A valid submission posts a card to the test channel, crediting you, with the note. The log lines "dry run: would request reviewers" and, with modifiers ticked, "dry run: would add labels" stand in for the GitHub writes (`npx wrangler tail --env staging`), so request the same reviewers on GitHub by hand to continue. The card shows only modifiers the PR already has as labels; add or remove one on GitHub and the card follows within a minute or two.
 - [ ] Submitting the same PR again updates that card and adds a threaded reply, without a second card.
 
 **A scratch PR's life** (in a tracked repo)

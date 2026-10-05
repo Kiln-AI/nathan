@@ -29,6 +29,9 @@
               "__typename": "User",
               "login": "bob"
             },
+            "labels": {
+              "nodes": []
+            },
             "reviewRequests": {
               "nodes": []
             },

@@ -61,6 +61,8 @@ export interface PRData {
   pendingReviewers: string[];
   /** Requested team slugs. Not expanded to members in V1 (spec §4.2). */
   pendingTeams: string[];
+  /** Label names, as spelled on GitHub. */
+  labels: string[];
   /** The latest review per reviewer. An approval or change request isn't overridden by a later comment. */
   reviews: Review[];
   /** The latest run per check name and status context on the head commit. */
@@ -115,6 +117,8 @@ export interface GitHubReader {
 export interface GitHubWriter {
   /** Adds reviewers; never removes anyone. */
   requestReviewers(repo: string, number: number, logins: readonly string[]): Promise<void>;
+  /** Adds labels, creating any the repo doesn't have yet; never removes any. */
+  addLabels(repo: string, number: number, labels: readonly string[]): Promise<void>;
 }
 
 export interface GitHubGateway {

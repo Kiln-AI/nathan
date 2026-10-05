@@ -7,14 +7,21 @@ export interface ReviewerRequest {
   logins: string[];
 }
 
+export interface LabelRequest {
+  repo: string;
+  number: number;
+  labels: string[];
+}
+
 /**
- * `GitHubGateway` over in-memory fixtures. `requestReviewers` is recorded and, like GitHub, adds the
- * logins to the PR's pending reviewers so a refresh afterwards sees them.
+ * `GitHubGateway` over in-memory fixtures. Writes are recorded and, like GitHub, add the logins to
+ * the PR's pending reviewers and the labels to its labels, so a refresh afterwards sees them.
  */
 export class FakeGitHub implements GitHubGateway {
   readonly prs: PRData[] = [];
   readonly history: PRHistory[] = [];
   readonly reviewerRequests: ReviewerRequest[] = [];
+  readonly labelRequests: LabelRequest[] = [];
   /** Repos the sweep reports as missing. */
   readonly missingRepos = new Set<string>();
   private failure: Error | undefined;
@@ -72,6 +79,17 @@ export class FakeGitHub implements GitHubGateway {
       if (pr) {
         const added = logins.filter((login) => !pr.pendingReviewers.includes(login));
         this.upsert({ ...pr, pendingReviewers: [...pr.pendingReviewers, ...added] });
+      }
+    },
+    addLabels: async (repo, number, labels) => {
+      this.check();
+      if (labels.length === 0) return;
+      this.labelRequests.push({ repo, number, labels: [...labels] });
+      const pr = this.prs.find((p) => p.repo === repo && p.number === number);
+      if (pr) {
+        const has = new Set(pr.labels.map((label) => label.toLowerCase()));
+        const added = labels.filter((label) => !has.has(label.toLowerCase()));
+        this.upsert({ ...pr, labels: [...pr.labels, ...added] });
       }
     },
   };

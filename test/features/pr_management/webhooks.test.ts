@@ -61,10 +61,24 @@ describe("pr_management webhooks", () => {
     expect(h.queue.sent).toHaveLength(1);
   });
 
+  it("refreshes a PR labelled or unlabelled on GitHub, whose labels are its modifiers", async () => {
+    const h = prApp();
+    h.github.upsert(aPR({ labels: ["Urgent", "bug"] }));
+    await h.refresh(101);
+    expect(await h.record(101)).toMatchObject({ modifiers: ["urgent"] });
+
+    h.github.upsert(aPR({ labels: ["bug", "quick"] }));
+    await deliver(h, "pull_request", { ...fixture(pullRequest), action: "unlabeled" });
+    await deliver(h, "pull_request", { ...fixture(pullRequest), action: "labeled" });
+    expect(await h.events(101)).toMatchObject([{ action: "unlabeled" }, { action: "labeled" }]);
+    await drain(h);
+    expect(await h.record(101)).toMatchObject({ modifiers: ["quick"] });
+  });
+
   it("ignores untracked repos and actions that can't change the state", async () => {
     const h = prApp();
     await deliver(h, "pull_request", withRepo(fixture(pullRequest), "Someone/else"));
-    await deliver(h, "pull_request", { ...fixture(pullRequest), action: "labeled" });
+    await deliver(h, "pull_request", { ...fixture(pullRequest), action: "assigned" });
     await deliver(h, "pull_request", { ...fixture(pullRequest), action: undefined });
     await deliver(h, "status", { ...fixture(status), repository: undefined });
     expect(await h.events(101)).toEqual([]);

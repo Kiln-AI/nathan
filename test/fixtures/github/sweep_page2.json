@@ -28,6 +28,9 @@
               "__typename": "User",
               "login": "outsider"
             },
+            "labels": {
+              "nodes": []
+            },
             "reviewRequests": {
               "nodes": []
             },

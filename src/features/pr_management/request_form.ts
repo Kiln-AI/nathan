@@ -22,8 +22,15 @@ export const REQUEST_PR_VIEW = "request_pr_form";
 /** Opens the form from a button (App Home, daily report). */
 export const OPEN_REQUEST_PR_ACTION = "request_pr_open";
 
+/** Also the names of the GitHub labels that carry them: a PR's modifiers are its labels (spec §4.3A). */
 export const MODIFIERS = ["quick", "large", "urgent"] as const;
 export type Modifier = (typeof MODIFIERS)[number];
+
+/** The modifiers among a PR's labels, matched case-insensitively, in `MODIFIERS` order. */
+export function modifiersFromLabels(labels: readonly string[]): Modifier[] {
+  const names = new Set(labels.map((label) => label.toLowerCase()));
+  return MODIFIERS.filter((modifier) => names.has(modifier));
+}
 
 /** Each input's block_id, which is also its action_id. Inline errors are keyed by block_id. */
 export const FIELD = { url: "pr_url", modifiers: "modifiers", reviewers: "reviewers", note: "note" } as const;

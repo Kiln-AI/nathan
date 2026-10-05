@@ -68,6 +68,7 @@ export interface RawPullRequest {
   headRefOid: string;
   mergeable: string;
   author: RawActor | null;
+  labels: { nodes: ({ name: string } | null)[] };
   reviewRequests: { nodes: ({ requestedReviewer: RawRequestedReviewer | null } | null)[] };
   latestOpinionatedReviews: { nodes: (RawReview | null)[] };
   latestReviews: { nodes: (RawReview | null)[] };
@@ -127,6 +128,7 @@ export function toPRData(repo: string, raw: RawPullRequest): PRData {
     mergeable: toMergeable(raw.mergeable),
     pendingReviewers: users,
     pendingTeams: teams,
+    labels: compact(raw.labels.nodes).map((label) => label.name),
     reviews: toLatestReviews(raw.latestOpinionatedReviews.nodes, raw.latestReviews.nodes),
     checks: toChecks(contexts?.nodes ?? []),
     checksTruncated: contexts?.pageInfo.hasNextPage ?? false,

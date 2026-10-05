@@ -12,7 +12,7 @@ export type CommitKey = z.infer<typeof commitKeySchema>;
 /** Coalesces a burst of events on one PR into one refresh (spec §4.3B and §4.5: 60 seconds). */
 export const REFRESH_DEBOUNCE = { windowSeconds: 60, maxWaitSeconds: 300 };
 
-/** Actions that can change a PR's state. `check_run` and `status` events always can. */
+/** Actions that can change a PR's state or modifiers. `check_run` and `status` events always can. */
 const RELEVANT_ACTIONS: Partial<Record<GitHubWebhookEvent["name"], ReadonlySet<string>>> = {
   pull_request: new Set([
     "opened",
@@ -26,6 +26,9 @@ const RELEVANT_ACTIONS: Partial<Record<GitHubWebhookEvent["name"], ReadonlySet<s
     "edited",
     "enqueued",
     "dequeued",
+    // Labels carry the modifiers (spec §4.3A).
+    "labeled",
+    "unlabeled",
   ]),
   pull_request_review: new Set(["submitted", "dismissed", "edited"]),
 };

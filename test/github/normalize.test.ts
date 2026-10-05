@@ -244,6 +244,7 @@ describe("toPRData", () => {
       mergeable: "mergeable",
       pendingReviewers: ["bob", "copilot-pull-request-reviewer[bot]"],
       pendingTeams: ["core-team"],
+      labels: ["Urgent", "bug"],
       reviews: [
         { author: "carol", state: "changes_requested", submittedAt: "2026-10-01T14:00:00.000Z" },
         { author: "dave", state: "commented", submittedAt: "2026-10-01T15:00:00.000Z" },

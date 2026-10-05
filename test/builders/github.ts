@@ -31,6 +31,7 @@ export function aPR(overrides: Partial<PRData> = {}): PRData {
     mergeable: "mergeable",
     pendingReviewers: [],
     pendingTeams: [],
+    labels: [],
     reviews: [],
     checks: [],
     checksTruncated: false,

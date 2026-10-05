@@ -5,6 +5,8 @@
 export const PR_PAGE_SIZE = 50;
 /** Check contexts fetched per head commit; more sets `checksTruncated`. */
 export const CHECK_CONTEXTS_LIMIT = 100;
+/** Labels fetched per PR. */
+export const LABELS_LIMIT = 100;
 /** Open PRs per page when looking a commit up. */
 export const OPEN_HEADS_PAGE_SIZE = 100;
 
@@ -29,6 +31,7 @@ function prFieldsFragment(prNumberVar: string | null): string {
   id number title url state isDraft isInMergeQueue createdAt updatedAt mergedAt closedAt
   additions deletions baseRefName headRefOid mergeable
   author { ${ACTOR} }
+  labels(first: ${LABELS_LIMIT}) { nodes { name } }
   reviewRequests(first: 50) { nodes { requestedReviewer {
     __typename ... on User { login } ... on Bot { login } ... on Mannequin { login } ... on Team { slug }
   } } }
