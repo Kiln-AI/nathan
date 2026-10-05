@@ -1,11 +1,12 @@
 import { DateTime } from "luxon";
 import type { Services } from "../../core/feature";
 import type { PRData } from "../../github";
-import { type CardModel, type RenderedCard, renderCard, reviewerLines } from "./card";
+import { type CardModel, type RenderedCard, renderCard } from "./card";
 import type { PRConfig } from "./config";
 import { describeHandoff } from "./handoff";
 import type { People } from "./people";
 import { modifiersFromLabels } from "./request_form";
+import { reviewerLines } from "./reviewers";
 import { categorize, computeStatus, effectiveMergeable, isFinal, type PRStatusState, sameOwners } from "./status";
 import { type CardLocation, NO_DRAFT_NUDGES, NO_REMINDERS, type PREvent, type PRRecord, type PRStore } from "./store";
 
@@ -142,6 +143,7 @@ function fromPullRequest(
     mergeable: effectiveMergeable(pr.mergeable, before?.mergeable),
     state: status.state,
     owners: status.owners,
+    reviewers: reviewerLines(pr),
     stateSince: before && !changed ? before.stateSince : readAt,
     draftSince: pr.isDraft ? DateTime.max(pr.createdAt, pr.lastConvertedToDraftAt ?? pr.createdAt) : null,
     refreshedAt: readAt,

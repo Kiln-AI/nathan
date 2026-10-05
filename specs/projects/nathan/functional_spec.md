@@ -194,7 +194,7 @@ There are two equivalent entry points, and both end in the same state: reviewers
     - **Open PRs**: PRs you wrote, counted by state.
   - **Tabs**: All, Overdue, Waiting on you and Your open PRs. Overdue filters both sections to overdue PRs and has no section of its own. Opening the tab again starts on All.
   - **Waiting on you**: PRs where you're an owner, grouped by next step, longest waiting first.
-  - **Your open PRs**: grouped by state, most action needed first, naming whoever else they're waiting on.
+  - **Your open PRs**: grouped by state, most action needed first. Each row lists every reviewer with their status, as on the card's Reviewers line (§4.4): ⏳ pending, ✅ approved, 🔁 changes requested, 💬 commented, requested teams marked "(team)" ("⏳ @joe, 🔁 @carol, ✅ @bob"). Dismissed reviews and the author's own are left out, and a reviewer requested again is pending. Anyone else the PR is waiting on who isn't a reviewer (e.g. the triager) is named first, without a status. A PR with neither names nobody.
   - Each row links the PR as "<repo> - #<number>", then shows its title, author and wait. Overdue rows are flagged ⏰. A group shows at most 30 rows, then "…and N more".
 - **`/nathan prs`**: posts the All tab as an ephemeral message, without tabs.
 - A user with no GitHub mapping sees instructions on how to get added.

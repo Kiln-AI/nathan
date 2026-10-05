@@ -18,12 +18,13 @@ import {
   section,
   truncate,
 } from "../../slack";
-import { MAX_LISTED_TITLE } from "./card";
+import { MAX_LISTED_TITLE, REVIEWER_EMOJI } from "./card";
 import type { PRConfig } from "./config";
 import { prKey } from "./metrics";
 import type { People } from "./people";
 import type { PRContext } from "./refresh";
 import { overdueOwners } from "./reminders";
+import type { ReviewerLine } from "./reviewers";
 import { isFinal, type PRStatusState, STATE_INFO } from "./status";
 import type { PRRecord } from "./store";
 
@@ -364,19 +365,28 @@ function waitingRow(item: QueueItem, people: People, login: string, now: DateTim
   return row(item, now, author);
 }
 
-/** "Kiln - #12 Title · waiting on @reviewer · 3h"; nobody's named while it's on you. */
+/**
+ * "Kiln - #12 Title · ⏳ @joe, 🔁 @carol, ✅ @bob · 3h": every reviewer with their status, as on
+ * the card. Anyone else it's waiting on who isn't a reviewer (e.g. the triager) is named first.
+ */
 function mineRow(item: QueueItem, people: People, login: string, now: DateTime): RichTextElement[] {
-  const others = item.record.owners.filter((owner) => !sameLogin(login)(owner));
-  const waitingOn =
-    others.length === 0
-      ? []
-      : [
-          [
-            richText.text("waiting on "),
-            ...others.flatMap((owner, i) => [...(i > 0 ? [richText.text(", ")] : []), ...person(owner, people)]),
-          ],
-        ];
-  return row(item, now, waitingOn);
+  const { owners, reviewers } = item.record;
+  const isReviewer = (owner: string) =>
+    reviewers.some((reviewer) => !reviewer.team && sameLogin(owner)(reviewer.login));
+  const others = owners.filter((owner) => !sameLogin(login)(owner) && !isReviewer(owner));
+  const names = [
+    ...others.map((owner) => person(owner, people)),
+    ...reviewers.map((reviewer) => reviewerName(reviewer, people)),
+  ];
+  if (names.length === 0) return row(item, now, []);
+  return row(item, now, [names.flatMap((name, i) => [...(i > 0 ? [richText.text(", ")] : []), ...name])]);
+}
+
+/** "⏳ @joe", or "⏳ core (team)" for a requested team. */
+function reviewerName(reviewer: ReviewerLine, people: People): RichTextElement[] {
+  const emoji = REVIEWER_EMOJI[reviewer.status];
+  if (reviewer.team) return [richText.text(`${emoji} ${reviewer.login} (team)`)];
+  return [richText.text(`${emoji} `), ...person(reviewer.login, people)];
 }
 
 function row(item: QueueItem, now: DateTime, middle: RichTextElement[][]): RichTextElement[] {

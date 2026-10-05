@@ -22,6 +22,7 @@ export function aRecord(overrides: Partial<PRRecord> = {}): PRRecord {
     mergeable: "mergeable",
     state: "needs_reviewer",
     owners: ["alice"],
+    reviewers: [],
     stateSince: at("2026-10-01T15:00:00Z"),
     draftSince: null,
     modifiers: [],
