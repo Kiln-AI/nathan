@@ -76,7 +76,7 @@ Fill in:
   - `triager`: the GitHub login that owns author-side steps of Dependabot and outside-contributor PRs. They must also be in `users`, or nobody gets tagged for those PRs.
   - `repos`: every tracked repo, `owner/name`.
   - `enabled`: leave `false` until the [production cutover](#production-cutover-checklist).
-  - Optional tuning (defaults in `src/features/pr_management/config.ts`): `reminders` (thresholds and message templates), `drafts` (nudge and report ages), `report` (time and time zone, default 09:30 `America/New_York`), `botAuthors`, `wipTitlePattern`.
+  - Optional tuning (defaults in `src/features/pr_management/config.ts`): `reminders` (thresholds and message templates), `drafts` (nudge and report ages), `report` (`enabled`, time and time zone, default on at 09:30 `America/New_York`), `botAuthors`, `wipTitlePattern`.
 - `environments.staging`: `dryRun: true` and `testChannel` (a channel such as `#nathan-test`). In dry run everything Nathan would post, in any channel or DM, goes to the test channel instead.
 
 Staging's overlay can enable `pr_management` on its own (`environments.staging.features.pr_management.enabled: true`), so it can be tested while production stays off.

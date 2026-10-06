@@ -28,7 +28,7 @@ describe("pr_management config", () => {
         templates: DEFAULT_REMINDER_TEMPLATES,
       },
       drafts: { nudgeAfterDays: 14, nudgeEveryDays: 7, reportAfterDays: 30 },
-      report: { at: "09:30", timezone: "America/New_York" },
+      report: { enabled: true, at: "09:30", timezone: "America/New_York" },
     });
   });
 

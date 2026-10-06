@@ -386,6 +386,14 @@ describe("the daily report task", () => {
     ]);
   });
 
+  it("posts nothing when the report is disabled", async () => {
+    const h = prApp({ config: prConfig({ report: { enabled: false } }) });
+    h.github.upsert(aPR({ pendingReviewers: ["bob"] }));
+
+    await tickAt(h, "2026-10-09T13:30:00Z");
+    expect(reports(h)).toEqual([]);
+  });
+
   it("covers the time since the last report and shows the change in open PRs", async () => {
     const h = prApp();
     h.github.upsert(aPR({ number: 1, createdAt: at("2026-10-08T10:00:00Z") }));

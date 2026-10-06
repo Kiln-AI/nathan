@@ -78,6 +78,8 @@ const draftsSchema = z.strictObject({
 });
 
 const reportSchema = z.strictObject({
+  /** Whether the daily report is posted to the PR channel. `/nathan pr_report` works either way. */
+  enabled: z.boolean().default(true),
   /** Local time (24h "HH:MM") the daily report is posted on weekdays. */
   at: z
     .string()
