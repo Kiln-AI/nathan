@@ -214,7 +214,7 @@ Before starting: steps 1–7 done for staging, `npm run verify:github -- staging
 **Scheduled work**
 
 - [ ] The hourly sweep runs at the top of the hour: cards' ages update, and any PR that changed while webhooks were off is corrected (try one with the Worker's GitHub webhook temporarily deactivated).
-- [ ] Reminders: a PR that sits past its threshold (24 working hours, 4 with `urgent`) gets a reminder reply in its card's thread. To see one sooner, deploy staging with a lowered `reminders.thresholdHours` for a day.
+- [ ] Reminders: a PR that sits past its threshold (24 working hours; 4 with `urgent`, 120 for a WIP title) gets a reminder reply in its card's thread. To see one sooner, deploy staging with a lowered `reminders.thresholdHours` for a day.
 - [ ] Drafts older than 14 days produce `[dry-run → DM …]` nudges.
 - [ ] The daily report posts at 09:30 ET on a weekday, with the Trends and People sections on Monday, and its **Request PR** button opens the form.
 - [ ] `/nathan-staging prs` and the Home tab show "Waiting on you" and "Your open PRs" for someone in `users`, and instructions for someone who isn't.
@@ -247,7 +247,7 @@ Production launches in two moves: first deployed with `pr_management` off, to ch
 
 - [ ] **The first sweep backfills cards** at the next top of the hour: one card for every open, non-draft PR with reviewers requested, including PRs the old workflow already posted. Expect that burst in `#prs`.
 - [ ] **Old drafts get one DM each:** drafts older than 14 days are nudged on the first sweep (once, however old).
-- [ ] Reminders don't start yet: staleness is measured from when Nathan first saw each PR, so the first reminders come one threshold (24 working hours) after launch.
+- [ ] Reminders don't start yet: staleness is measured from when Nathan first saw each PR, so the first reminders come one threshold (24 working hours; a week for WIP titles) after launch.
 - [ ] The first daily report, the next weekday at 09:30 ET, has no previous report to compare against, so it shows no change in the open count. The Needs attention section fills in once reminders start.
 - [ ] Request one real review through the form and watch its card and handoffs.
 - [ ] The admin channel stays quiet, and `nathan-jobs-production-dlq` stays empty.

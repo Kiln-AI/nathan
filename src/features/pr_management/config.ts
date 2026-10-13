@@ -26,6 +26,12 @@ export function isReminded(state: PRStatusState): state is RemindedState {
 }
 
 /**
+ * A WIP-titled PR is still being worked on, so its author is reminded weekly (5 working days)
+ * rather than daily.
+ */
+export const DEFAULT_THRESHOLD_HOURS_BY_STATE: Partial<Record<RemindedState, number>> = { wip_title: 120 };
+
+/**
  * Reminder lines by escalation level: levels 1, 2, 3, then 4 and up (the last group repeats).
  * Each is mrkdwn, posted after the owner tags and followed by the next step and age.
  */
@@ -57,8 +63,11 @@ const positiveHours = z.number().positive();
 const remindersSchema = z.strictObject({
   /** Working hours (weekends excluded) a PR may sit in one state before its owners are reminded. */
   thresholdHours: positiveHours.default(24),
-  /** Overrides `thresholdHours` for particular states. */
-  thresholdHoursByState: z.partialRecord(z.enum(REMINDED_STATES), positiveHours).default({}),
+  /** Overrides `thresholdHours` for particular states, on top of DEFAULT_THRESHOLD_HOURS_BY_STATE. */
+  thresholdHoursByState: z
+    .partialRecord(z.enum(REMINDED_STATES), positiveHours)
+    .default({})
+    .transform((byState) => ({ ...DEFAULT_THRESHOLD_HOURS_BY_STATE, ...byState })),
   /** The threshold for PRs requested with the `urgent` modifier (never longer than the state's own). */
   urgentThresholdHours: positiveHours.default(4),
   /** Reminder lines grouped by level; see DEFAULT_REMINDER_TEMPLATES. */

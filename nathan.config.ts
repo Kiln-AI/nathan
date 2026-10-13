@@ -25,8 +25,6 @@ export default defineConfig({
       repos: ["Kiln-AI/Kiln", "Kiln-AI/kiln_server"],
       channel: "C0996APVD9R", // #prs
       triager: "chiang-daniel",
-      // WIP-titled PRs are still being worked on: remind weekly (5 working days), not daily.
-      reminders: { thresholdHoursByState: { wip_title: 120 } },
     },
   },
 
