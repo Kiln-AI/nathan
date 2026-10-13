@@ -195,7 +195,6 @@ describe("stale reminders", () => {
   it("reminds about a WIP title weekly when configured, and daily again once the title loses WIP", async () => {
     const h = prApp({ config: prConfig({ reminders: { thresholdHoursByState: { wip_title: 120 } } }) });
     await seenAt(h, "2026-10-05T14:00:00Z", { title: "WIP: Add the thing" });
-    // A normal PR would be reminded after a day; a WIP one waits five working days (the weekend doesn't count).
     await sweepAt(h, "2026-10-06T14:00:00Z");
     await sweepAt(h, "2026-10-09T14:00:00Z");
     expect(threadReplies(h)).toEqual([]);
@@ -205,14 +204,14 @@ describe("stale reminders", () => {
       '*Next step:* Convert to draft, or drop "WIP" from the title · waiting 1w',
     );
 
-    // Dropping WIP changes the state, which resets the clock: the new state's 24-hour threshold applies.
+    // Dropping WIP changes the state, which resets the clock; the new state's 24-hour threshold applies.
     h.github.upsert(aPR({ title: "Add the thing" }));
     await sweepAt(h, "2026-10-12T15:00:00Z");
     await sweepAt(h, "2026-10-13T14:00:00Z");
     expect(threadReplies(h)).toHaveLength(1);
     await sweepAt(h, "2026-10-13T15:00:00Z");
     expect(threadReplies(h)).toHaveLength(2);
-    // Back at level 1 (a different variant: a PR never gets the same line twice in a row).
+    // Level 1 again, in a fresh variant: a PR never gets the same line twice in a row.
     const [tagged, facts] = threadReplies(h)[1]?.text.split("\n") ?? [];
     expect(LEVEL_1.map((line) => `<@UALICE> — ${line}`)).toContain(tagged);
     expect(facts).toContain("*Next step:* Request a reviewer · waiting 1d");
