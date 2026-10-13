@@ -25,6 +25,9 @@ export default defineConfig({
       repos: ["Kiln-AI/Kiln", "Kiln-AI/kiln_server"],
       channel: "C0996APVD9R", // #prs
       triager: "chiang-daniel",
+      // WIP-titled PRs are reminded weekly (120 working hours = 5 weekdays), not daily: a daily
+      // "convert to draft" nudge is noise while the author is still working.
+      reminders: { thresholdHoursByState: { wip_title: 120 } },
     },
   },
 
