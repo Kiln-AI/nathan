@@ -25,6 +25,8 @@ export default defineConfig({
       repos: ["Kiln-AI/Kiln", "Kiln-AI/kiln_server"],
       channel: "C0996APVD9R", // #prs
       triager: "chiang-daniel",
+      // Daily report to #prs is off; `/nathan pr_report` still DMs it on demand.
+      report: { enabled: false },
     },
   },
 
