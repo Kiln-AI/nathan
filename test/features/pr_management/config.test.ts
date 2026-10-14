@@ -6,6 +6,7 @@ import { prManagement } from "../../../src/features/pr_management";
 import {
   DEFAULT_BOT_AUTHORS,
   DEFAULT_REMINDER_TEMPLATES,
+  DEFAULT_THRESHOLD_HOURS_BY_STATE,
   DEFAULT_WIP_TITLE_PATTERN,
 } from "../../../src/features/pr_management/config";
 import { prApp, prConfig } from "../../helpers/pr";
@@ -23,7 +24,7 @@ describe("pr_management config", () => {
       wipTitlePattern: DEFAULT_WIP_TITLE_PATTERN,
       reminders: {
         thresholdHours: 24,
-        thresholdHoursByState: {},
+        thresholdHoursByState: DEFAULT_THRESHOLD_HOURS_BY_STATE,
         urgentThresholdHours: 4,
         templates: DEFAULT_REMINDER_TEMPLATES,
       },
@@ -45,8 +46,18 @@ describe("pr_management config", () => {
         drafts: { nudgeEveryDays: 3 },
       }),
     ).toMatchObject({
-      reminders: { thresholdHours: 24, thresholdHoursByState: { awaiting_review: 8 }, templates: [["Ping"]] },
+      reminders: {
+        thresholdHours: 24,
+        thresholdHoursByState: { wip_title: 120, awaiting_review: 8 },
+        templates: [["Ping"]],
+      },
       drafts: { nudgeAfterDays: 14, nudgeEveryDays: 3 },
+    });
+  });
+
+  it("lets a per-state threshold replace the WIP default", () => {
+    expect(load({ reminders: { thresholdHoursByState: { wip_title: 24 } } })).toMatchObject({
+      reminders: { thresholdHoursByState: { wip_title: 24 } },
     });
   });
 

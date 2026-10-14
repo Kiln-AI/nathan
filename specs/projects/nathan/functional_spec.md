@@ -150,7 +150,7 @@ There are two equivalent entry points, and both end in the same state: reviewers
 
 ### 4.6 Stale reminders
 - **Staleness clock:** hours elapsed since the PR entered its current state and owner set. Weekend hours (Saturday and Sunday in the **owner's** Slack time zone) don't count, so tone doesn't escalate over a weekend nobody worked. Any state or owner change resets the clock and the escalation level.
-- **Threshold:** 24 hours (1 day) for all states. The `urgent` modifier (label) shortens this to 4 hours. Thresholds are configurable per state.
+- **Threshold:** 24 hours (1 day) for all states except `wip_title`, which gets 120 hours (a working week): a WIP-titled PR is still being worked on, so a daily nudge would be noise. The `urgent` modifier (label) shortens this to 4 hours. Thresholds are configurable per state.
 - **Delivery:** an hourly sweep posts a threaded reply on the card, @-tagging each overdue owner. Reminders are sent as soon as they're due, at any time of day. Team policy is "send anytime, read when you're working", so there are no quiet hours.
 - **Repeat:** after the first reminder, the next is due after another full threshold interval, at an escalation level one higher.
 - **Tone escalation:** configurable message templates grouped by level (1, 2, 3, 4+). Each level has several variants, picked at random (avoiding the variant used last time on that PR) so it stays fresh. Level 1 is friendly, and later levels get progressively more pointed and humorous. The highest level repeats indefinitely. Every reminder states the next step and age.

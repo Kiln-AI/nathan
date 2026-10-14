@@ -192,6 +192,30 @@ describe("stale reminders", () => {
     expect(threadReplies(h)).toHaveLength(2);
   });
 
+  it("reminds about a WIP title after a working week, then on the default schedule once the title changes", async () => {
+    const h = prApp();
+    await seenAt(h, "2026-10-05T14:00:00Z", { title: "WIP: Add the thing" });
+    await sweepAt(h, "2026-10-06T14:00:00Z");
+    await sweepAt(h, "2026-10-12T13:00:00Z");
+    expect(threadReplies(h)).toEqual([]);
+
+    await sweepAt(h, "2026-10-12T14:00:00Z");
+    expect(threadReplies(h).map((post) => post.text)).toEqual([
+      `<@UALICE> — ${LEVEL_1[0]}\n*Next step:* Convert to draft, or drop "WIP" from the title · waiting 1w · opened 1w 3d ago`,
+    ]);
+
+    // Dropping WIP changes the state, which restarts the clock under the default threshold.
+    h.github.upsert(aPR({ title: "Add the thing" }));
+    await sweepAt(h, "2026-10-12T15:00:00Z");
+    await sweepAt(h, "2026-10-13T14:00:00Z");
+    expect(threadReplies(h)).toHaveLength(1);
+
+    await sweepAt(h, "2026-10-13T15:00:00Z");
+    expect(threadReplies(h).at(-1)?.text).toBe(
+      `<@UALICE> — ${LEVEL_1[1]}\n*Next step:* Request a reviewer · waiting 1d · opened 1w 5d ago`,
+    );
+  });
+
   it("never reminds about drafts", async () => {
     const h = prApp();
     await seenAt(h, "2026-10-05T14:00:00Z", { isDraft: true });
