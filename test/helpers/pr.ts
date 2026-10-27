@@ -1,11 +1,13 @@
+import type { DateTime } from "luxon";
 import type { AppOverrides } from "../../src/core/app";
 import { loadConfig } from "../../src/core/config";
+import { MAX_BOUND_PARAMS } from "../../src/core/db";
 import { normalizeGithubLogin, type UserDirectory } from "../../src/core/directory";
 import { prManagement } from "../../src/features/pr_management";
 import type { PRConfig } from "../../src/features/pr_management/config";
 import { createPeople, type People } from "../../src/features/pr_management/people";
 import type { PRContext } from "../../src/features/pr_management/refresh";
-import { createPRStore } from "../../src/features/pr_management/store";
+import { createPRStore, type PRStore } from "../../src/features/pr_management/store";
 import { aConfig } from "../builders/config";
 import { fakeBatch, fakeMessage } from "../fakes/batch";
 import { testApp } from "./app";
@@ -60,6 +62,22 @@ export function prApp(overrides: AppOverrides = {}) {
 }
 
 export type PRTestApp = ReturnType<typeof prApp>;
+
+/** More values than D1 binds to one statement, or to two. */
+export const MORE_THAN_D1_BINDS = MAX_BOUND_PARAMS * 2 + 50;
+
+/** Records `count` check_run events on a PR, as a push to a big CI matrix does. */
+export async function recordCheckRuns(store: PRStore, count: number, receivedAt: DateTime, number = 101, repo = REPO) {
+  for (let i = 0; i < count; i++) {
+    await store.recordEvent(repo, number, {
+      event: "check_run",
+      action: "completed",
+      actor: "github-actions[bot]",
+      subject: null,
+      receivedAt,
+    });
+  }
+}
 
 /** The feature's context over the test app, for calling its functions directly. */
 export function prContext(h: PRTestApp): PRContext {

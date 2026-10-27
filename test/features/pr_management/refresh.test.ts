@@ -2,7 +2,7 @@ import { DateTime } from "luxon";
 import { describe, expect, it, vi } from "vitest";
 import type { PRData } from "../../../src/github";
 import { aPR, aReview } from "../../builders/github";
-import { PR_CHANNEL, type PRTestApp, prApp, REPO } from "../../helpers/pr";
+import { MORE_THAN_D1_BINDS, PR_CHANNEL, type PRTestApp, prApp, REPO, recordCheckRuns } from "../../helpers/pr";
 
 const awaitingBob = (overrides: Partial<PRData> = {}) => aPR({ pendingReviewers: ["bob"], ...overrides });
 
@@ -162,6 +162,14 @@ describe("refresh: the record", () => {
     h.github.succeed();
     h.github.upsert(aPR());
     await h.refresh(101);
+    expect(await h.events(101)).toEqual([]);
+  });
+
+  it("consumes more events than D1 binds to one statement", async () => {
+    const h = prApp();
+    h.github.upsert(aPR());
+    await recordCheckRuns(h.store, MORE_THAN_D1_BINDS, h.clock.now());
+    expect(await h.refresh(101)).toEqual({ kind: "ack" });
     expect(await h.events(101)).toEqual([]);
   });
 });
