@@ -1,5 +1,5 @@
 import { DateTime } from "luxon";
-import type { Db, SqlParam } from "../../core/db";
+import { type Db, inListChunks, type SqlParam } from "../../core/db";
 import type { Mergeable } from "../../github";
 import { decodeReviewers, type ReviewerLine } from "./reviewers";
 import type { PRCategory, PRStatusState } from "./status";
@@ -321,13 +321,15 @@ export function createPRStore(db: Db) {
 
     /** Records not yet merged or closed in `repos`. */
     async openRecords(repos: readonly string[]): Promise<PRRecord[]> {
-      if (repos.length === 0) return [];
-      const rows = await db.all<PRRow>(
-        `SELECT * FROM pr_prs WHERE state NOT IN ${FINAL_STATES} AND repo IN (${repos.map(() => "?").join(", ")})
-         ORDER BY repo, number`,
-        ...repos,
+      const rowsPerChunk = await Promise.all(
+        inListChunks(repos).map(({ placeholders, values }) =>
+          db.all<PRRow>(
+            `SELECT * FROM pr_prs WHERE state NOT IN ${FINAL_STATES} AND repo IN (${placeholders})`,
+            ...values,
+          ),
+        ),
       );
-      return rows.map(toRecord);
+      return rowsPerChunk.flat().sort(byRepoThenNumber).map(toRecord);
     },
 
     async recordEvent(repo: string, number: number, event: NewPREvent): Promise<void> {
@@ -364,11 +366,16 @@ export function createPRStore(db: Db) {
 
     async deleteEvents(repo: string, number: number, ids: readonly number[]): Promise<void> {
       if (ids.length === 0) return;
-      await db.run(
-        `DELETE FROM pr_events WHERE repo = ? AND number = ? AND id IN (${ids.map(() => "?").join(", ")})`,
-        repo,
-        number,
-        ...ids,
+      const prParams = [repo, number];
+      // One transaction, so the events are consumed together or not at all.
+      await db.batch(
+        inListChunks(ids, prParams.length).map(({ placeholders, values }) =>
+          db.statement(
+            `DELETE FROM pr_events WHERE repo = ? AND number = ? AND id IN (${placeholders})`,
+            ...prParams,
+            ...values,
+          ),
+        ),
       );
     },
 
@@ -396,6 +403,12 @@ export function createPRStore(db: Db) {
       await db.run("DELETE FROM pr_events WHERE received_at < ?", receivedBefore.toMillis());
     },
   };
+}
+
+/** SQLite's `ORDER BY repo, number`: repos compare by code unit (they're ASCII), not by locale. */
+function byRepoThenNumber(a: PRRow, b: PRRow): number {
+  if (a.repo !== b.repo) return a.repo < b.repo ? -1 : 1;
+  return a.number - b.number;
 }
 
 function toRecord(row: PRRow): PRRecord {

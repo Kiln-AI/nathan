@@ -1,5 +1,30 @@
 export type SqlParam = string | number | null;
 
+/** D1 binds at most this many parameters to one statement (stock SQLite allows thousands). */
+export const MAX_BOUND_PARAMS = 100;
+
+/** A slice of an `IN (…)` list that fits in one statement. */
+export interface InListChunk<T extends SqlParam> {
+  /** `?, ?, …`: one per value. */
+  placeholders: string;
+  values: T[];
+}
+
+/**
+ * Splits the values of an `IN (…)` list into chunks that each fit in one statement alongside its
+ * `otherParams` other bound parameters. Run one statement per chunk; an empty list has no chunks.
+ */
+export function inListChunks<T extends SqlParam>(values: readonly T[], otherParams = 0): InListChunk<T>[] {
+  const size = MAX_BOUND_PARAMS - otherParams;
+  if (size < 1) throw new RangeError(`No room for an IN list next to ${otherParams} other parameters`);
+  const chunks: InListChunk<T>[] = [];
+  for (let start = 0; start < values.length; start += size) {
+    const chunk = values.slice(start, start + size);
+    chunks.push({ placeholders: chunk.map(() => "?").join(", "), values: chunk });
+  }
+  return chunks;
+}
+
 /** Thin typed helpers over D1. Feature repositories write plain SQL on top of these. */
 export interface Db {
   first<T>(sql: string, ...params: SqlParam[]): Promise<T | null>;

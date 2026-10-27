@@ -2,7 +2,7 @@ import type { DateTime } from "luxon";
 import { describe, expect, it, vi } from "vitest";
 import { RateLimitedError } from "../../../src/github";
 import { aPR, aReview } from "../../builders/github";
-import { PR_CHANNEL, type PRTestApp, prApp, REPO } from "../../helpers/pr";
+import { MORE_THAN_D1_BINDS, PR_CHANNEL, type PRTestApp, prApp, REPO, recordCheckRuns } from "../../helpers/pr";
 
 const TOP_OF_HOUR = Date.parse("2026-10-05T15:00:00Z");
 const SWEEP_SOURCE = "pr_management.sweep";
@@ -135,6 +135,18 @@ describe("hourly sweep", () => {
     expect(await h.record(101)).toMatchObject({ state: "needs_reviewer" });
     expect(reported(h)).toEqual([]);
     expect(h.log.at("warn").map((e) => e.msg)).toContain("GitHub rate limit hit; sweep stopped early");
+  });
+
+  it("consumes more events on a PR than D1 binds to one statement", async () => {
+    const h = prApp();
+    h.github.upsert(aPR({ pendingReviewers: ["bob"] }));
+    await recordCheckRuns(h.store, MORE_THAN_D1_BINDS, h.clock.now());
+
+    await runSweep(h);
+
+    expect(reported(h)).toEqual([]);
+    expect(await h.events(101)).toEqual([]);
+    expect(await h.record(101)).toMatchObject({ state: "awaiting_review" });
   });
 
   it("reports a failed sweep query through the scheduler", async () => {
