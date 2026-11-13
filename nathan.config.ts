@@ -22,7 +22,7 @@ export default defineConfig({
     // PR/CR management (docs/setup.md).
     pr_management: {
       enabled: true,
-      repos: ["Kiln-AI/Kiln", "Kiln-AI/kiln_server"],
+      repos: ["Kiln-AI/Kiln", "Kiln-AI/kiln_server", "Kiln-AI/docs"],
       channel: "C0996APVD9R", // #prs
       triager: "chiang-daniel",
       // Daily report to #prs is off; `/nathan pr_report` still DMs it on demand.
